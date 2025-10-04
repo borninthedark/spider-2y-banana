@@ -62,8 +62,8 @@
     - role: system_services
       tags: [services, config]
       vars:
-        enable_graphical_target: "{{ enable_sway_desktop }}"
-        enable_greetd: "{{ enable_sway_desktop }}"
+        system_services_enable_graphical_target: "{{ enable_sway_desktop }}"
+        system_services_enable_greetd: "{{ enable_sway_desktop }}"
 
     - role: virtualization
       tags: [virt, virtualization]

@@ -7,7 +7,7 @@
     src: /usr/lib/systemd/system/graphical.target
     dest: /etc/systemd/system/default.target
     state: link
-  when: enable_graphical_target | bool
+  when: system_services_enable_graphical_target | bool
 
 - name: Enable systemd-resolved
   ansible.builtin.systemd:
@@ -30,7 +30,7 @@
   ansible.builtin.systemd:
     name: greetd
     enabled: true
-  when: enable_greetd | bool
+  when: system_services_enable_greetd | bool
 
 - name: Enable libvirtd service
   ansible.builtin.systemd:

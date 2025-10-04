@@ -2,10 +2,10 @@
 # Default variables for base_packages role
 # Based on exousia custom-pkgs/packages.add
 
-upgrade_all_packages: true
+base_packages_upgrade_all_packages: true
 
 # Core Utilities
-core_utilities:
+base_packages_core_utilities:
   - kitty
   - neovim
   - flatpak
@@ -25,12 +25,12 @@ core_utilities:
   - greetd-tuigreet
 
 # Audio & Media
-audio_media_packages:
+base_packages_audio_media_packages:
   - mpd
   - ranger
 
 # Tools
-developer_tools:
+base_packages_developer_tools:
   - chezmoi
   - bat
   - wf-recorder
@@ -41,7 +41,7 @@ developer_tools:
   - wireguard-tools
 
 # Virtualization
-virtualization_packages:
+base_packages_virtualization_packages:
   - virt-manager
   - qemu-kvm
   - slirp4netns
@@ -52,14 +52,14 @@ virtualization_packages:
   - podman
 
 # Security
-security_tools:
+base_packages_security_tools:
   - pam-u2f
   - pamu2fcfg
   - lynis
   - openssl
 
 # Developer & Power User Tools
-power_user_tools:
+base_packages_power_user_tools:
   - ripgrep
   - zoxide
   - npm

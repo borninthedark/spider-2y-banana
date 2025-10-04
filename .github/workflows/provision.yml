@@ -35,34 +35,19 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Ansible
-        run: |
-          python -m pip install --upgrade pip
-          pip install ansible
-
-      - name: Install Ansible requirements
-        run: |
-          cd ansible
-          if [ -f requirements.yml ]; then
-            ansible-galaxy install -r requirements.yml
-          fi
-
       - name: Run Ansible playbook
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: False
-        run: |
-          cd ansible
-          EXTRA_ARGS=""
-          if [ -n "${{ github.event.inputs.tags }}" ]; then
-            EXTRA_ARGS="--tags ${{ github.event.inputs.tags }}"
-          fi
-
-          ansible-playbook \
-            -i inventory/hosts \
-            playbooks/provision.yml \
-            -e "enable_k8s_tools=${{ github.event.inputs.enable_k8s }}" \
-            -e "enable_virtualization=${{ github.event.inputs.enable_virt }}" \
-            $EXTRA_ARGS
+        uses: dawidd6/action-ansible-playbook@v4
+        with:
+          playbook: playbooks/provision.yml
+          directory: ./ansible
+          requirements: requirements.yml
+          options: |
+            --inventory inventory/hosts
+            --extra-vars enable_k8s_tools=${{ github.event.inputs.enable_k8s }}
+            --extra-vars enable_virtualization=${{ github.event.inputs.enable_virt }}
+            --extra-vars ansible_user=root
+            --become
+            ${{ github.event.inputs.tags && format('--tags {0}', github.event.inputs.tags) || '' }}
 
       - name: Display provisioning summary
         run: echo "Provisioning completed successfully!"

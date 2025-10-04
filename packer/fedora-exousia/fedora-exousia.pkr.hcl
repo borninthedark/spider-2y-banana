@@ -79,11 +79,11 @@ build {
     ]
   }
 
-  // --- FIX: precreate writable tmpdirs for Ansible
+  // --- FIX: precreate writable tmpdirs for Ansible (root user)
   provisioner "shell" {
     inline = [
-      "mkdir -p /tmp/.ansible/tmp /var/tmp/.ansible/tmp",
-      "chmod -R 1777 /tmp /var/tmp"
+      "mkdir -p /tmp/.ansible/tmp",
+      "chmod -R 1777 /tmp"
     ]
   }
 

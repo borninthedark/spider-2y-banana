@@ -4,14 +4,8 @@ name: DevSec Fedora Sericea Bootc CI
 on:
   push:
     branches: [main]
-    paths:
-      - 'packer/**'
-      - 'ansible/**'
   pull_request:
     branches: [main]
-    paths:
-      - 'packer/**'
-      - 'ansible/**'
   workflow_dispatch:
     inputs:
       push_image:

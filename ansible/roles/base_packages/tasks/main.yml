@@ -8,6 +8,7 @@
       - "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_version }}.noarch.rpm"
     state: present
     disable_gpg_check: true
+    use_backend: dnf5
 
 - name: Enable Cisco OpenH264 repository
   ansible.builtin.command:
@@ -18,61 +19,72 @@
   ansible.builtin.dnf:
     name: "{{ base_packages_core_utilities }}"
     state: present
+    use_backend: dnf5
 
 - name: Install audio and media packages
   ansible.builtin.dnf:
     name: "{{ base_packages_audio_media_packages }}"
     state: present
+    use_backend: dnf5
   when: base_packages_audio_media_packages | length > 0
 
 - name: Install development tools
   ansible.builtin.dnf:
     name: "{{ base_packages_developer_tools }}"
     state: present
+    use_backend: dnf5
 
 - name: Install cloud tools
   ansible.builtin.dnf:
     name: "{{ cloud_tools }}"
     state: present
+    use_backend: dnf5
   when: cloud_tools | length > 0
 
 - name: Install security tools
   ansible.builtin.dnf:
     name: "{{ base_packages_security_tools }}"
     state: present
+    use_backend: dnf5
 
 - name: Install power user tools
   ansible.builtin.dnf:
     name: "{{ base_packages_power_user_tools }}"
     state: present
+    use_backend: dnf5
   when: base_packages_power_user_tools | length > 0
 
 - name: Install extra packages
   ansible.builtin.dnf:
     name: "{{ extra_packages }}"
     state: present
+    use_backend: dnf5
   when: extra_packages | length > 0
 
 - name: Install Plymouth packages
   ansible.builtin.dnf:
     name: "{{ plymouth_packages }}"
     state: present
+    use_backend: dnf5
   when: plymouth_packages | length > 0
 
 - name: Install virtualization packages
   ansible.builtin.dnf:
     name: "{{ base_packages_virtualization_packages }}"
     state: present
+    use_backend: dnf5
   when: base_packages_virtualization_packages | length > 0
 
 - name: Remove unwanted packages
   ansible.builtin.dnf:
     name: "{{ packages_to_remove }}"
     state: absent
+    use_backend: dnf5
   when: packages_to_remove | length > 0
 
 - name: Upgrade all packages
   ansible.builtin.dnf:
     name: "*"
     state: latest
+    use_backend: dnf5
   when: base_packages_upgrade_all_packages | bool

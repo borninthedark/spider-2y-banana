@@ -71,12 +71,12 @@ build {
   name = "fedora-exousia-${var.fedora_version}"
   sources = ["source.docker.fedora_exousia"]
 
-  // --- Create dnf -> dnf5 symlink for compatibility
   provisioner "shell" {
     inline = [
-      "ln -sf /usr/bin/dnf5 /usr/bin/dnf"
-    ]
-  }
+    "microdnf install -y python3 python3-pip dnf5 sudo curl",
+    "ln -sf /usr/bin/dnf5 /usr/bin/dnf"
+  ]
+}
 
   // --- Ensure Python + dnf base tools installed
   provisioner "shell" {

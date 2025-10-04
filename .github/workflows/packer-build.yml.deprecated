@@ -1,0 +1,279 @@
+---
+name: Build Container Images with Packer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packer/**'
+      - 'ansible/**'
+      - '.github/workflows/packer-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packer/**'
+      - 'ansible/**'
+  workflow_dispatch:
+    inputs:
+      image_type:
+        description: 'Image to build'
+        required: true
+        type: choice
+        options:
+          - fedora-base
+          - fedora-k8s
+          - fedora-sway
+          - all
+        default: 'fedora-base'
+      registry:
+        description: 'Container registry'
+        required: false
+        default: 'docker.io'
+      push_image:
+        description: 'Push to registry'
+        type: boolean
+        default: false
+
+env:
+  PACKER_VERSION: "1.10.0"
+
+jobs:
+  build-base:
+    name: Build fedora-base
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.image_type == 'fedora-base' ||
+      github.event.inputs.image_type == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: ${{ env.PACKER_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Install Ansible requirements
+        run: |
+          cd ansible
+          ansible-galaxy install -r requirements.yml
+
+      - name: Initialize Packer
+        run: |
+          cd packer/fedora-base
+          packer init .
+
+      - name: Validate Packer template
+        run: |
+          cd packer/fedora-base
+          packer validate .
+
+      - name: Build image (no push)
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !github.event.inputs.push_image)
+        run: |
+          cd packer/fedora-base
+          packer build \
+            -var "registry=${{ github.event.inputs.registry || 'docker.io' }}" \
+            -var "registry_username=${{ github.repository_owner }}" \
+            -except="docker-push" \
+            .
+
+      - name: Login to Docker Hub
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_image)
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_image)
+        env:
+          REGISTRY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          cd packer/fedora-base
+          packer build \
+            -var "registry=${{ github.event.inputs.registry || 'docker.io' }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME }}" \
+            .
+
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-base-manifest
+          path: packer/fedora-base/manifest.json
+
+  build-k8s:
+    name: Build fedora-k8s
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.image_type == 'fedora-k8s' ||
+      github.event.inputs.image_type == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: ${{ env.PACKER_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Install Ansible requirements
+        run: |
+          cd ansible
+          ansible-galaxy install -r requirements.yml
+
+      - name: Initialize Packer
+        run: |
+          cd packer/fedora-k8s
+          packer init .
+
+      - name: Validate Packer template
+        run: |
+          cd packer/fedora-k8s
+          packer validate .
+
+      - name: Build image (no push)
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !github.event.inputs.push_image)
+        run: |
+          cd packer/fedora-k8s
+          packer build \
+            -var "registry=${{ github.event.inputs.registry || 'docker.io' }}" \
+            -var "registry_username=${{ github.repository_owner }}" \
+            -except="docker-push" \
+            .
+
+      - name: Login to Docker Hub
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_image)
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_image)
+        env:
+          REGISTRY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          cd packer/fedora-k8s
+          packer build \
+            -var "registry=${{ github.event.inputs.registry || 'docker.io' }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME }}" \
+            .
+
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-k8s-manifest
+          path: packer/fedora-k8s/manifest.json
+
+  build-sway:
+    name: Build fedora-sway
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.image_type == 'fedora-sway' ||
+      github.event.inputs.image_type == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: ${{ env.PACKER_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Install Ansible requirements
+        run: |
+          cd ansible
+          ansible-galaxy install -r requirements.yml
+
+      - name: Initialize Packer
+        run: |
+          cd packer/fedora-sway
+          packer init .
+
+      - name: Validate Packer template
+        run: |
+          cd packer/fedora-sway
+          packer validate .
+
+      - name: Build image (no push)
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !github.event.inputs.push_image)
+        run: |
+          cd packer/fedora-sway
+          packer build \
+            -var "registry=${{ github.event.inputs.registry || 'docker.io' }}" \
+            -var "registry_username=${{ github.repository_owner }}" \
+            -except="docker-push" \
+            .
+
+      - name: Login to Docker Hub
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_image)
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_image)
+        env:
+          REGISTRY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          cd packer/fedora-sway
+          packer build \
+            -var "registry=${{ github.event.inputs.registry || 'docker.io' }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME }}" \
+            .
+
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-sway-manifest
+          path: packer/fedora-sway/manifest.json

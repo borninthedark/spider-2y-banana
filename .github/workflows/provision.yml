@@ -1,0 +1,68 @@
+---
+name: Provision Fedora System
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_host:
+        description: 'Target host or inventory group'
+        required: true
+        default: 'all'
+      enable_k8s:
+        description: 'Enable Kubernetes tools'
+        type: boolean
+        default: true
+      enable_virt:
+        description: 'Enable virtualization'
+        type: boolean
+        default: true
+      tags:
+        description: 'Ansible tags (comma-separated)'
+        required: false
+        default: ''
+
+jobs:
+  provision:
+    name: Run Ansible Provisioning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Install Ansible requirements
+        run: |
+          cd ansible
+          if [ -f requirements.yml ]; then
+            ansible-galaxy install -r requirements.yml
+          fi
+
+      - name: Run Ansible playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+        run: |
+          cd ansible
+          EXTRA_ARGS=""
+          if [ -n "${{ github.event.inputs.tags }}" ]; then
+            EXTRA_ARGS="--tags ${{ github.event.inputs.tags }}"
+          fi
+
+          ansible-playbook \
+            -i inventory/hosts \
+            playbooks/provision.yml \
+            -e "enable_k8s_tools=${{ github.event.inputs.enable_k8s }}" \
+            -e "enable_virtualization=${{ github.event.inputs.enable_virt }}" \
+            $EXTRA_ARGS
+
+      - name: Display provisioning summary
+        run: echo "Provisioning completed successfully!"

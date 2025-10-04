@@ -1,0 +1,7 @@
+---
+# Default variables for virtualization role
+
+virtualization_packages:
+  - virt-manager
+  - qemu-kvm
+  - libvirt

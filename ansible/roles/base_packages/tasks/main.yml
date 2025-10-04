@@ -1,0 +1,78 @@
+---
+# Base packages installation tasks
+
+- name: Install RPM Fusion repositories
+  ansible.builtin.dnf:
+    name:
+      - "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_version }}.noarch.rpm"
+      - "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_version }}.noarch.rpm"
+    state: present
+    disable_gpg_check: true
+
+- name: Enable Cisco OpenH264 repository
+  ansible.builtin.command:
+    cmd: dnf config-manager setopt fedora-cisco-openh264.enabled=1
+  changed_when: false
+
+- name: Install core utilities
+  ansible.builtin.dnf:
+    name: "{{ core_utilities }}"
+    state: present
+
+- name: Install audio and media packages
+  ansible.builtin.dnf:
+    name: "{{ audio_media_packages }}"
+    state: present
+  when: audio_media_packages | length > 0
+
+- name: Install development tools
+  ansible.builtin.dnf:
+    name: "{{ developer_tools }}"
+    state: present
+
+- name: Install cloud tools
+  ansible.builtin.dnf:
+    name: "{{ cloud_tools }}"
+    state: present
+  when: cloud_tools | length > 0
+
+- name: Install security tools
+  ansible.builtin.dnf:
+    name: "{{ security_tools }}"
+    state: present
+
+- name: Install power user tools
+  ansible.builtin.dnf:
+    name: "{{ power_user_tools }}"
+    state: present
+  when: power_user_tools | length > 0
+
+- name: Install extra packages
+  ansible.builtin.dnf:
+    name: "{{ extra_packages }}"
+    state: present
+  when: extra_packages | length > 0
+
+- name: Install Plymouth packages
+  ansible.builtin.dnf:
+    name: "{{ plymouth_packages }}"
+    state: present
+  when: plymouth_packages | length > 0
+
+- name: Install virtualization packages
+  ansible.builtin.dnf:
+    name: "{{ virtualization_packages }}"
+    state: present
+  when: virtualization_packages | length > 0
+
+- name: Remove unwanted packages
+  ansible.builtin.dnf:
+    name: "{{ packages_to_remove }}"
+    state: absent
+  when: packages_to_remove | length > 0
+
+- name: Upgrade all packages
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+  when: upgrade_all_packages | bool

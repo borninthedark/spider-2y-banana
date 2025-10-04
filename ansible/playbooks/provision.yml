@@ -1,0 +1,81 @@
+---
+# Main provisioning playbook for Fedora systems
+# Based on exousia custom-pkgs and Containerfile configuration
+# Can be called from GitHub Actions or other CI/CD pipelines
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts playbooks/provision.yml
+#   ansible-playbook -i inventory/hosts playbooks/provision.yml --tags base
+#   ansible-playbook -i inventory/hosts playbooks/provision.yml --tags k8s
+#   ansible-playbook -i inventory/hosts playbooks/provision.yml --tags sway
+
+- name: Provision Fedora System
+  hosts: all
+  become: true
+
+  vars:
+    fedora_version: 43
+    enable_plymouth: true
+    enable_k8s_tools: true
+    enable_virtualization: true
+    enable_sway_desktop: false
+    enable_graphical_target: false
+    enable_greetd: false
+    plymouth_theme: bgrt-better-luks
+
+  pre_tasks:
+    - name: Gather OS facts
+      ansible.builtin.setup:
+        gather_subset:
+          - distribution
+          - distribution_version
+
+    - name: Verify Fedora system
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Fedora"
+        fail_msg: "This playbook is designed for Fedora systems only"
+        success_msg: "Running on Fedora {{ ansible_distribution_version }}"
+
+    - name: Install DNF5
+      ansible.builtin.dnf:
+        name:
+          - dnf5
+          - dnf5-plugins
+        state: present
+
+  roles:
+    - role: base_packages
+      tags: [base, packages]
+
+    - role: security
+      tags: [security, auth]
+
+    - role: sway_desktop
+      tags: [sway, desktop]
+      when: enable_sway_desktop | bool
+
+    - role: kubernetes_tools
+      tags: [k8s, kubernetes]
+      when: enable_k8s_tools | bool
+
+    - role: system_services
+      tags: [services, config]
+      vars:
+        enable_graphical_target: "{{ enable_sway_desktop }}"
+        enable_greetd: "{{ enable_sway_desktop }}"
+
+    - role: virtualization
+      tags: [virt, virtualization]
+      when: enable_virtualization | bool
+
+  post_tasks:
+    - name: Display provisioning summary
+      ansible.builtin.debug:
+        msg:
+          - "Provisioning completed successfully!"
+          - "Fedora version: {{ ansible_distribution_version }}"
+          - "Plymouth enabled: {{ enable_plymouth }}"
+          - "K8s tools enabled: {{ enable_k8s_tools }}"
+          - "Virtualization enabled: {{ enable_virtualization }}"
+          - "Sway desktop enabled: {{ enable_sway_desktop }}"

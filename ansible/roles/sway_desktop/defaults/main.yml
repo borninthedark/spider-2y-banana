@@ -1,0 +1,59 @@
+---
+# Default variables for sway_desktop role
+# Based on exousia custom-pkgs/packages.sway
+
+# Sway desktop packages
+sway_core_packages:
+  - sway-config-upstream
+  - firefox
+
+# Display Manager
+display_manager_packages:
+  - greetd
+  - tuigreet
+
+# Boot Splash
+plymouth_packages:
+  - plymouth
+  - plymouth-system-theme
+  - plymouth-plugin-two-step
+
+# File Manager & GVFS
+file_manager_packages:
+  - thunar
+  - thunar-archive-plugin
+  - thunar-volman
+  - gvfs
+  - gvfs-mtp
+  - gvfs-gphoto2
+
+# Media Viewers
+media_viewer_packages:
+  - imv
+  - zathura
+  - zathura-pdf-mupdf
+
+# Screenshot Tools
+screenshot_packages:
+  - swappy
+
+# System Controls
+system_control_packages:
+  - brightnessctl
+  - pavucontrol
+
+# Bluetooth Support
+bluetooth_packages:
+  - bluez
+  - bluez-tools
+  - blueman
+
+# Power Management
+power_management_packages:
+  - tlp
+  - powertop
+
+# Additional Fonts
+font_packages:
+  - google-noto-sans-fonts
+  - google-noto-serif-fonts

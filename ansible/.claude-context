@@ -1,0 +1,39 @@
+# Ansible Playbooks for Fedora Provisioning
+
+This directory contains Ansible playbooks and roles for provisioning Fedora systems.
+These playbooks are designed to be called from GitHub Actions workflows in other repositories.
+
+## Structure
+
+- `playbooks/` - Main playbooks
+  - `provision.yml` - Main provisioning playbook
+- `roles/` - Ansible roles
+  - `base_packages/` - Install core utilities and tools
+  - `kubernetes_tools/` - Install k8s, kubectl, helm, etc.
+  - `system_services/` - Configure systemd services
+  - `virtualization/` - Setup libvirt and virt-manager
+- `inventory/` - Inventory files
+- `group_vars/` - Group variables
+
+## Usage
+
+### Local execution
+```bash
+cd ansible
+ansible-galaxy install -r requirements.yml
+ansible-playbook -i inventory/hosts playbooks/provision.yml
+```
+
+### With tags
+```bash
+ansible-playbook -i inventory/hosts playbooks/provision.yml --tags base
+ansible-playbook -i inventory/hosts playbooks/provision.yml --tags k8s
+```
+
+### From GitHub Actions
+Reference this repository in your workflow and run the playbooks.
+
+## Configuration
+
+Edit `inventory/hosts` to define target systems.
+Customize variables in role defaults or via `group_vars/`.

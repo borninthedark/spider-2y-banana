@@ -1,0 +1,537 @@
+---
+name: Packer DevSecOps CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packer/**'
+      - 'ansible/**'
+      - '.github/workflows/packer-devsec-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packer/**'
+      - 'ansible/**'
+  workflow_dispatch:
+    inputs:
+      image_type:
+        description: 'Image to build'
+        required: true
+        type: choice
+        options:
+          - fedora-base
+          - fedora-k8s
+          - fedora-sway
+          - all
+        default: 'all'
+      push_image:
+        description: 'Push to registry'
+        type: boolean
+        default: true
+  schedule:
+    - cron: "30 5 * * *" # Nightly build at 5:30 AM UTC
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  pull-requests: write
+  security-events: write
+
+concurrency:
+  group: packer-devsec-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PACKER_VERSION: "1.10.0"
+  REGISTRY: docker.io
+  FEDORA_VERSION: "43"
+
+jobs:
+  # ======================== BUILD, TEST, SCAN, PUSH, SIGN ========================= #
+
+  build-fedora-base:
+    name: Build & Test fedora-base
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.image_type == 'fedora-base' ||
+      github.event.inputs.image_type == 'all'
+
+    steps:
+      # ======================== BUILD STAGE ========================= #
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify required file structure
+        run: |
+          echo "Verifying required Ansible structure..."
+
+          required_roles=("base_packages" "security" "system_services")
+          for role in "${required_roles[@]}"; do
+            if [[ ! -d "ansible/roles/$role" ]]; then
+              echo "::error::Missing ansible/roles/$role directory"
+              exit 1
+            fi
+          done
+          echo "✓ All required Ansible roles present"
+
+          if [[ ! -f "ansible/playbooks/provision.yml" ]]; then
+            echo "::error::Missing ansible/playbooks/provision.yml"
+            exit 1
+          fi
+          echo "✓ Provision playbook present"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: ${{ env.PACKER_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint
+
+      - name: Install Ansible requirements
+        run: |
+          cd ansible
+          ansible-galaxy install -r requirements.yml
+
+      - name: Initialize Packer
+        run: |
+          cd packer/fedora-base
+          packer init .
+
+      - name: Validate Packer template
+        run: |
+          cd packer/fedora-base
+          packer validate .
+
+      - name: Lint Ansible playbooks
+        run: |
+          cd ansible
+          ansible-lint playbooks/ || echo "::warning::ansible-lint found issues"
+
+      - name: Build image (without push)
+        run: |
+          cd packer/fedora-base
+          packer build \
+            -var "fedora_version=${{ env.FEDORA_VERSION }}" \
+            -var "registry=${{ env.REGISTRY }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME || 'test' }}" \
+            -except="docker-push" \
+            .
+
+      # ======================== TEST STAGE ========================== #
+      - name: Setup Bats testing framework
+        id: setup-bats
+        uses: bats-core/bats-action@3.0.0
+
+      - name: Run BATS tests on built image
+        shell: bash
+        env:
+          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
+          TERM: xterm
+          TEST_IMAGE_TAG: "${{ secrets.DOCKERHUB_USERNAME }}/fedora-base:latest"
+        run: |
+          echo "Running tests against image: $TEST_IMAGE_TAG"
+
+          # Use buildah to test the local image
+          buildah unshare -- bats -r tests/container/
+
+      # ======================== SCAN STAGE ========================== #
+      - name: Cache Trivy database
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ runner.os }}-v2
+
+      - name: Install Trivy for vulnerability scanning
+        run: |
+          curl -sSfL https://github.com/aquasecurity/trivy/releases/download/v0.52.2/trivy_0.52.2_Linux-64bit.tar.gz \
+            | tar -xz -C /usr/local/bin trivy
+
+      - name: Trivy vulnerability scan (non-blocking)
+        continue-on-error: true
+        run: |
+          IMAGE_TAG="${{ secrets.DOCKERHUB_USERNAME }}/fedora-base:latest"
+
+          trivy image "$IMAGE_TAG" \
+            --scanners vuln \
+            --severity CRITICAL,HIGH \
+            --exit-code 1 \
+            --format table || echo "::warning::Trivy found CRITICAL or HIGH vulnerabilities."
+
+      - name: Semgrep static analysis
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: auto
+
+      # ======================== PUSH STAGE ========================== #
+      - name: Login to Docker Hub
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image to Docker Hub
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        run: |
+          cd packer/fedora-base
+
+          export REGISTRY_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+          export REGISTRY_PASSWORD="${{ secrets.DOCKERHUB_TOKEN }}"
+
+          packer build \
+            -var "fedora_version=${{ env.FEDORA_VERSION }}" \
+            -var "registry=${{ env.REGISTRY }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME }}" \
+            .
+
+      # ======================== SIGN STAGE ========================== #
+      - name: Install Cosign for image signing
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Sign the container image
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/fedora-base:latest"
+          echo "Signing image: $IMAGE"
+          cosign sign --yes "$IMAGE"
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-base-manifest
+          path: packer/fedora-base/manifest.json
+
+  build-fedora-k8s:
+    name: Build & Test fedora-k8s
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.image_type == 'fedora-k8s' ||
+      github.event.inputs.image_type == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: ${{ env.PACKER_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Install Ansible requirements
+        run: |
+          cd ansible
+          ansible-galaxy install -r requirements.yml
+
+      - name: Initialize Packer
+        run: |
+          cd packer/fedora-k8s
+          packer init .
+
+      - name: Validate Packer template
+        run: |
+          cd packer/fedora-k8s
+          packer validate .
+
+      - name: Build image (without push)
+        run: |
+          cd packer/fedora-k8s
+          packer build \
+            -var "fedora_version=${{ env.FEDORA_VERSION }}" \
+            -var "registry=${{ env.REGISTRY }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME || 'test' }}" \
+            -except="docker-push" \
+            .
+
+      - name: Setup Bats testing framework
+        id: setup-bats
+        uses: bats-core/bats-action@3.0.0
+
+      - name: Run BATS tests on built image
+        shell: bash
+        env:
+          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
+          TERM: xterm
+          TEST_IMAGE_TAG: "${{ secrets.DOCKERHUB_USERNAME }}/fedora-k8s:latest"
+        run: |
+          buildah unshare -- bats -r tests/container/
+
+      - name: Cache Trivy database
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ runner.os }}-v2
+
+      - name: Install Trivy
+        run: |
+          curl -sSfL https://github.com/aquasecurity/trivy/releases/download/v0.52.2/trivy_0.52.2_Linux-64bit.tar.gz \
+            | tar -xz -C /usr/local/bin trivy
+
+      - name: Trivy vulnerability scan
+        continue-on-error: true
+        run: |
+          trivy image "${{ secrets.DOCKERHUB_USERNAME }}/fedora-k8s:latest" \
+            --scanners vuln \
+            --severity CRITICAL,HIGH \
+            --exit-code 1 \
+            --format table || echo "::warning::Trivy found vulnerabilities."
+
+      - name: Login to Docker Hub
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image to Docker Hub
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        run: |
+          cd packer/fedora-k8s
+
+          export REGISTRY_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+          export REGISTRY_PASSWORD="${{ secrets.DOCKERHUB_TOKEN }}"
+
+          packer build \
+            -var "fedora_version=${{ env.FEDORA_VERSION }}" \
+            -var "registry=${{ env.REGISTRY }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME }}" \
+            .
+
+      - name: Install Cosign
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Sign the container image
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        run: |
+          cosign sign --yes "${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/fedora-k8s:latest"
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-k8s-manifest
+          path: packer/fedora-k8s/manifest.json
+
+  build-fedora-sway:
+    name: Build & Test fedora-sway
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.image_type == 'fedora-sway' ||
+      github.event.inputs.image_type == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: ${{ env.PACKER_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Install Ansible requirements
+        run: |
+          cd ansible
+          ansible-galaxy install -r requirements.yml
+
+      - name: Initialize Packer
+        run: |
+          cd packer/fedora-sway
+          packer init .
+
+      - name: Validate Packer template
+        run: |
+          cd packer/fedora-sway
+          packer validate .
+
+      - name: Build image (without push)
+        run: |
+          cd packer/fedora-sway
+          packer build \
+            -var "fedora_version=${{ env.FEDORA_VERSION }}" \
+            -var "registry=${{ env.REGISTRY }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME || 'test' }}" \
+            -except="docker-push" \
+            .
+
+      - name: Setup Bats testing framework
+        id: setup-bats
+        uses: bats-core/bats-action@3.0.0
+
+      - name: Run BATS tests on built image
+        shell: bash
+        env:
+          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
+          TERM: xterm
+          TEST_IMAGE_TAG: "${{ secrets.DOCKERHUB_USERNAME }}/fedora-sway:latest"
+        run: |
+          buildah unshare -- bats -r tests/container/
+
+      - name: Cache Trivy database
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ runner.os }}-v2
+
+      - name: Install Trivy
+        run: |
+          curl -sSfL https://github.com/aquasecurity/trivy/releases/download/v0.52.2/trivy_0.52.2_Linux-64bit.tar.gz \
+            | tar -xz -C /usr/local/bin trivy
+
+      - name: Trivy vulnerability scan
+        continue-on-error: true
+        run: |
+          trivy image "${{ secrets.DOCKERHUB_USERNAME }}/fedora-sway:latest" \
+            --scanners vuln \
+            --severity CRITICAL,HIGH \
+            --exit-code 1 \
+            --format table || echo "::warning::Trivy found vulnerabilities."
+
+      - name: Login to Docker Hub
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image to Docker Hub
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        run: |
+          cd packer/fedora-sway
+
+          export REGISTRY_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+          export REGISTRY_PASSWORD="${{ secrets.DOCKERHUB_TOKEN }}"
+
+          packer build \
+            -var "fedora_version=${{ env.FEDORA_VERSION }}" \
+            -var "registry=${{ env.REGISTRY }}" \
+            -var "registry_username=${{ secrets.DOCKERHUB_USERNAME }}" \
+            .
+
+      - name: Install Cosign
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Sign the container image
+        if: |
+          (github.event_name != 'pull_request') &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.push_image == 'true')
+        run: |
+          cosign sign --yes "${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/fedora-sway:latest"
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+
+      - name: Upload manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-sway-manifest
+          path: packer/fedora-sway/manifest.json
+
+  # ======================== SUMMARY STAGE ========================== #
+
+  build-summary:
+    name: Generate Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-fedora-base, build-fedora-k8s, build-fedora-sway]
+    if: always()
+
+    steps:
+      - name: Download all manifests
+        uses: actions/download-artifact@v4
+        with:
+          path: manifests/
+
+      - name: Generate build summary
+        run: |
+          echo "## 🚀 Packer Container Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Fedora Version: \`${{ env.FEDORA_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Registry: \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "### 📦 Published Images" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Base:** \`${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/fedora-base:latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **K8s:** \`${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/fedora-k8s:latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Sway:** \`${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/fedora-sway:latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "### 📚 Resources" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- [Packer Documentation](https://www.packer.io/docs)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Ansible Playbooks](ansible/README.md)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Test Results](tests/README.md)" >> $GITHUB_STEP_SUMMARY

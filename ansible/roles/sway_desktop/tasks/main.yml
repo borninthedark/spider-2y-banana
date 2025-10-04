@@ -1,0 +1,86 @@
+---
+# Sway desktop environment installation tasks
+# Based on exousia custom-pkgs/packages.sway
+
+- name: Install Sway core packages
+  ansible.builtin.dnf:
+    name: "{{ sway_core_packages }}"
+    state: present
+
+- name: Install display manager packages
+  ansible.builtin.dnf:
+    name: "{{ display_manager_packages }}"
+    state: present
+
+- name: Install Plymouth packages
+  ansible.builtin.dnf:
+    name: "{{ plymouth_packages }}"
+    state: present
+
+- name: Install file manager and GVFS
+  ansible.builtin.dnf:
+    name: "{{ file_manager_packages }}"
+    state: present
+
+- name: Install media viewers
+  ansible.builtin.dnf:
+    name: "{{ media_viewer_packages }}"
+    state: present
+
+- name: Install screenshot tools
+  ansible.builtin.dnf:
+    name: "{{ screenshot_packages }}"
+    state: present
+
+- name: Install system control packages
+  ansible.builtin.dnf:
+    name: "{{ system_control_packages }}"
+    state: present
+
+- name: Install Bluetooth support
+  ansible.builtin.dnf:
+    name: "{{ bluetooth_packages }}"
+    state: present
+
+- name: Install power management tools
+  ansible.builtin.dnf:
+    name: "{{ power_management_packages }}"
+    state: present
+
+- name: Install additional fonts
+  ansible.builtin.dnf:
+    name: "{{ font_packages }}"
+    state: present
+
+- name: Enable Bluetooth service
+  ansible.builtin.systemd:
+    name: bluetooth
+    enabled: true
+    state: started
+
+- name: Enable TLP service
+  ansible.builtin.systemd:
+    name: tlp
+    enabled: true
+    state: started
+
+- name: Install Python i3ipc for autotiling
+  ansible.builtin.dnf:
+    name: python3-i3ipc
+    state: present
+
+- name: Deploy autotiling script
+  ansible.builtin.copy:
+    src: autotiling
+    dest: /usr/local/bin/autotiling
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Deploy lid management script
+  ansible.builtin.copy:
+    src: lid
+    dest: /usr/local/bin/lid
+    mode: '0755'
+    owner: root
+    group: root

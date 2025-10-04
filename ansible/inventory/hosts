@@ -1,0 +1,8 @@
+# Ansible inventory file
+# Define your Fedora systems here
+
+[fedora_systems]
+# localhost ansible_connection=local
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

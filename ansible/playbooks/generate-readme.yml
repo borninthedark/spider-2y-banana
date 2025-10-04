@@ -1,0 +1,26 @@
+---
+# README generation playbook
+# Generates README.md for the project based on current configuration
+# Based on exousia custom-scripts/generate-readme
+
+- name: Generate README Documentation
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    project_name: "Fedora Provisioning Playbooks"
+    fedora_version: 43
+    build_date: "{{ ansible_date_time.iso8601 }}"
+    readme_path: "{{ playbook_dir }}/../README.md"
+
+  tasks:
+    - name: Generate README content
+      ansible.builtin.template:
+        src: ../templates/README.md.j2
+        dest: "{{ readme_path }}"
+        mode: '0644'
+
+    - name: Display README location
+      ansible.builtin.debug:
+        msg: "README.md generated at {{ readme_path }}"

@@ -1,0 +1,79 @@
+---
+# System services configuration tasks
+# Based on exousia Containerfile
+
+- name: Set graphical target as default
+  ansible.builtin.file:
+    src: /usr/lib/systemd/system/graphical.target
+    dest: /etc/systemd/system/default.target
+    state: link
+  when: enable_graphical_target | bool
+
+- name: Enable systemd-resolved
+  ansible.builtin.systemd:
+    name: systemd-resolved
+    enabled: true
+    state: started
+
+- name: Enable NetworkManager
+  ansible.builtin.systemd:
+    name: NetworkManager
+    enabled: true
+    state: started
+
+- name: Configure Flathub repository
+  ansible.builtin.command:
+    cmd: flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+  changed_when: false
+
+- name: Enable greetd service
+  ansible.builtin.systemd:
+    name: greetd
+    enabled: true
+  when: enable_greetd | bool
+
+- name: Enable libvirtd service
+  ansible.builtin.systemd:
+    name: libvirtd
+    enabled: true
+  when: enable_virtualization | bool
+
+- name: Configure Plymouth theme
+  ansible.builtin.command:
+    cmd: plymouth-set-default-theme {{ plymouth_theme }}
+  when:
+    - enable_plymouth | bool
+    - plymouth_theme is defined
+  notify: Rebuild initramfs
+
+- name: Create Plymouth kernel arguments directory
+  ansible.builtin.file:
+    path: /usr/lib/bootc/kargs.d
+    state: directory
+    mode: '0755'
+  when: enable_plymouth | bool
+
+- name: Configure Plymouth kernel arguments
+  ansible.builtin.copy:
+    content: |
+      kargs = ["rd.plymouth=1", "plymouth.ignore-serial-consoles", "quiet", "splash"]
+    dest: /usr/lib/bootc/kargs.d/plymouth.toml
+    mode: '0644'
+  when: enable_plymouth | bool
+
+- name: Create dracut configuration directory
+  ansible.builtin.file:
+    path: /usr/lib/dracut/dracut.conf.d
+    state: directory
+    mode: '0755'
+  when: enable_plymouth | bool
+
+- name: Configure dracut for Plymouth
+  ansible.builtin.copy:
+    content: |
+      add_dracutmodules+=" plymouth "
+      omit_dracutmodules+=" "
+    dest: /usr/lib/dracut/dracut.conf.d/plymouth.conf
+    mode: '0644'
+  when: enable_plymouth | bool
+  notify: Rebuild initramfs

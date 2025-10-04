@@ -1,0 +1,7 @@
+---
+# Handlers for system_services role
+
+- name: Rebuild initramfs
+  ansible.builtin.command:
+    cmd: dracut --force --regenerate-all
+  when: ansible_facts['os_family'] == "RedHat"

@@ -1,0 +1,28 @@
+---
+# Default variables for kubernetes_tools role
+# Versions from exousia Containerfile and custom-pkgs/packages.k8s
+
+# Installation toggles
+install_kubectl: true
+install_helm: true
+install_k3s: true
+install_argocd: true
+install_k3d: true
+
+# Tool versions (from exousia)
+k3s_version: v1.30.5+k3s1
+kubectl_version: v1.30.0
+helm_version: v3.16.2
+argocd_version: v2.12.3
+k3d_version: v5.7.4
+
+# Base packages (from packages.k8s)
+k8s_base_packages:
+  - podman
+  - slirp4netns
+  - fuse-overlayfs
+  - rootlesskit
+  - iptables
+  - curl
+  - jq
+  - git

@@ -1,0 +1,90 @@
+---
+# Default variables for base_packages role
+# Based on exousia custom-pkgs/packages.add
+
+upgrade_all_packages: true
+
+# Core Utilities
+core_utilities:
+  - kitty
+  - neovim
+  - flatpak
+  - wob
+  - rtkit
+  - cargo
+  - git
+  - swaync
+  - fuzzel
+  - htop
+  - nwg-look
+  - btop
+  - etckeeper
+  - fastfetch
+  - glances
+  - greetd
+  - greetd-tuigreet
+
+# Audio & Media
+audio_media_packages:
+  - mpd
+  - ranger
+
+# Tools
+developer_tools:
+  - chezmoi
+  - bat
+  - wf-recorder
+  - lsd
+  - fzf
+  - direnv
+  - distrobox
+  - wireguard-tools
+
+# Virtualization
+virtualization_packages:
+  - virt-manager
+  - qemu-kvm
+  - slirp4netns
+  - fuse-overlayfs
+  - rootlesskit
+  - iptables
+  - libvirt
+  - podman
+
+# Security
+security_tools:
+  - pam-u2f
+  - pamu2fcfg
+  - lynis
+  - openssl
+
+# Developer & Power User Tools
+power_user_tools:
+  - ripgrep
+  - zoxide
+  - npm
+  - nodejs
+
+# Cloud Tools
+cloud_tools:
+  - awscli2
+
+# Extra
+extra_packages:
+  - cava
+  - zsh
+  - zsh-autosuggestions
+  - zsh-syntax-highlighting
+
+# Plymouth (boot splash screen)
+plymouth_packages:
+  - plymouth
+  - plymouth-system-theme
+  - plymouth-plugin-two-step
+
+# Packages to remove (from exousia custom-pkgs/packages.remove)
+packages_to_remove:
+  - foot
+  - dunst
+  - rofi-wayland
+  - sddm

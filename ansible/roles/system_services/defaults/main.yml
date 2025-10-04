@@ -1,0 +1,9 @@
+---
+# Default variables for system_services role
+# Based on exousia Containerfile
+
+enable_graphical_target: false
+enable_greetd: false
+enable_virtualization: false
+enable_plymouth: false
+plymouth_theme: bgrt-better-luks

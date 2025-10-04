@@ -1,0 +1,56 @@
+---
+# Security configuration tasks
+# Based on exousia custom-scripts/config-authselect
+
+- name: Install authselect and PAM U2F packages
+  ansible.builtin.dnf:
+    name:
+      - authselect
+      - pam-u2f
+      - pamu2fcfg
+    state: present
+  when: enable_u2f | bool
+
+- name: Check if authselect profile exists
+  ansible.builtin.command:
+    cmd: authselect list
+  register: authselect_profiles
+  changed_when: false
+  when: enable_u2f | bool
+
+- name: Create authselect profile for U2F
+  ansible.builtin.command:
+    cmd: authselect create-profile with-u2f -b sssd --symlink-meta
+  when:
+    - enable_u2f | bool
+    - "'custom/with-u2f' not in authselect_profiles.stdout"
+
+- name: Apply authselect profile
+  ansible.builtin.command:
+    cmd: authselect select {{ authselect_profile }} --force
+  when: enable_u2f | bool
+  changed_when: true
+
+- name: Check if pam_u2f is configured
+  ansible.builtin.lineinfile:
+    path: /etc/authselect/{{ authselect_profile }}/system-auth
+    regexp: 'pam_u2f.so'
+    state: absent
+  check_mode: true
+  register: u2f_configured
+  when: enable_u2f | bool
+
+- name: Enable U2F in system-auth
+  ansible.builtin.lineinfile:
+    path: /etc/authselect/{{ authselect_profile }}/system-auth
+    insertafter: 'pam_unix.so'
+    line: 'auth    sufficient    pam_u2f.so cue origin=pam appid=pam'
+  when:
+    - enable_u2f | bool
+    - u2f_configured is changed
+
+- name: Apply authselect changes
+  ansible.builtin.command:
+    cmd: authselect apply-changes
+  when: enable_u2f | bool
+  changed_when: true

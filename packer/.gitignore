@@ -1,0 +1,16 @@
+# Packer
+*.pkrvars.hcl
+!*.pkrvars.hcl.example
+packer_cache/
+crash.log
+manifest.json
+*.box
+
+# Credentials
+*.pem
+*.key
+credentials
+
+# Logs
+*.log
+packer-debug.log

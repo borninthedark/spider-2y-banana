@@ -1,0 +1,20 @@
+---
+# Virtualization setup tasks
+
+- name: Install virtualization packages
+  ansible.builtin.dnf:
+    name: "{{ virtualization_packages }}"
+    state: present
+
+- name: Enable libvirtd service
+  ansible.builtin.systemd:
+    name: libvirtd
+    enabled: true
+    state: started
+
+- name: Add user to libvirt group
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    groups: libvirt
+    append: true
+  when: ansible_user_id is defined

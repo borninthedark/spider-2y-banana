@@ -1,0 +1,5 @@
+---
+# Default variables for security role
+
+enable_u2f: false
+authselect_profile: custom/with-u2f

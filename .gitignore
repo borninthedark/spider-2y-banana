@@ -25,6 +25,7 @@ Thumbs.db
 *secret*
 *password*
 vault_pass.txt
+settings.local.json 
 
 # Temporary
 *.tmp

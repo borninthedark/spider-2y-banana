@@ -51,7 +51,7 @@ variable "registry_password" {
 }
 
 source "docker" "fedora_exousia" {
-  image  = "quay.io/fedora-bootc/fedora-bootc:${var.fedora_version}"
+  image  = "quay.io/fedora/fedora-bootc:${var.fedora_version}"
   commit = true
   changes = [
     "ENV CONTAINER=docker",

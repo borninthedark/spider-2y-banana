@@ -80,9 +80,8 @@ build {
   // Run Ansible provisioning with all features enabled
   // Combines: base packages + security + k8s tools + sway desktop + virtualization
   provisioner "ansible" {
-    playbook_file     = "../../ansible/playbooks/provision.yml"
-    working_directory = "../../ansible"
-    user              = "root"
+    playbook_file = "../../ansible/playbooks/provision.yml"
+    user          = "root"
 
     extra_arguments = [
       "--extra-vars",
@@ -92,7 +91,8 @@ build {
     ]
 
     ansible_env_vars = [
-      "ANSIBLE_HOST_KEY_CHECKING=False"
+      "ANSIBLE_HOST_KEY_CHECKING=False",
+      "ANSIBLE_CONFIG=../../ansible/ansible.cfg"
     ]
   }
 

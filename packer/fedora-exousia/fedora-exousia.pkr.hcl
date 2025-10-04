@@ -17,7 +17,7 @@ packer {
 
 variable "fedora_version" {
   type    = string
-  default = "43"
+  default = "42"
   validation {
     condition     = contains(["41", "42", "43", "rawhide"], var.fedora_version)
     error_message = "Fedora version must be one of: 41, 42, 43, rawhide."
@@ -74,7 +74,7 @@ build {
   provisioner "shell" {
     inline = [
     "microdnf install -y python3 python3-pip dnf5 sudo curl",
-    "ln -sf /usr/bin/dnf5 /usr/bin/dnf"
+    "ln -sf /usr/bin/dnf /usr/bin/dnf5"
   ]
 }
 

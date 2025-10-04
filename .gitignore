@@ -30,3 +30,4 @@ settings.local.json
 # Temporary
 *.tmp
 *.log
+.claude

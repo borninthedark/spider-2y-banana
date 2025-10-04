@@ -70,21 +70,7 @@ source "docker" "fedora_exousia" {
 build {
   name = "fedora-exousia-${var.fedora_version}"
   sources = ["source.docker.fedora_exousia"]
-
-  provisioner "shell" {
-    inline = [
-    "microdnf install -y python3 python3-pip dnf5 sudo curl",
-    "ln -sf /usr/bin/dnf /usr/bin/dnf5"
-  ]
-}
-
-  // --- Ensure Python + dnf base tools installed
-  provisioner "shell" {
-    inline = [
-      "dnf install -y python3 python3-pip sudo curl",
-      "dnf clean all"
-    ]
-  }
+  
 
   // --- FIX: precreate writable tmpdirs for Ansible (root user)
   provisioner "shell" {

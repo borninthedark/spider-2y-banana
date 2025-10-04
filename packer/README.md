@@ -4,41 +4,26 @@ Build custom Fedora container images using Packer and Ansible playbooks from spi
 
 ## 📦 Available Templates
 
-### fedora-base
-Minimal Fedora container with core packages.
+### fedora-exousia
+Complete Fedora development environment combining base packages, Kubernetes tools, Sway desktop, and virtualization support.
 
 **Includes:**
 - Core utilities (from ansible/roles/base_packages)
 - Security hardening (U2F support)
 - System services configuration
-
-**Base:** `quay.io/fedora/fedora:43`
-
-### fedora-k8s
-Fedora container with full Kubernetes tooling.
-
-**Includes:**
-- Everything in fedora-base
 - k3s v1.30.5+k3s1
 - kubectl v1.30.0
 - Helm v3.16.2
 - ArgoCD CLI v2.12.3
 - k3d v5.7.4
 - Rootless k3s configuration
-
-**Base:** `quay.io/fedora/fedora:43`
-
-### fedora-sway
-Fedora container with Sway desktop environment.
-
-**Includes:**
-- Everything in fedora-base
 - Sway window manager
 - greetd/tuigreet display manager
 - Desktop applications (Firefox, Thunar, etc.)
 - Autotiling and lid management scripts
+- Virtualization support (libvirt, virt-manager)
 
-**Base:** `quay.io/fedora/fedora:43`
+**Base:** `quay.io/fedora-bootc/fedora-bootc:43`
 
 ## 🚀 Usage
 
@@ -53,16 +38,15 @@ sudo dnf install packer  # Fedora
 # Install Ansible
 pip install ansible
 
-# Install Docker or Podman
-sudo dnf install docker  # or podman
-sudo systemctl start docker
+# Install container tools
+sudo dnf install podman buildah skopeo
 ```
 
-### Build Container Images Locally
+### Build Container Image Locally
 
 ```bash
-# Build fedora-base
-cd packer/fedora-base
+# Build fedora-exousia
+cd packer/fedora-exousia
 packer init .
 packer validate .
 
@@ -75,29 +59,15 @@ export REGISTRY_PASSWORD="your-token"
 packer build .
 ```
 
-### Build Other Images
-
-```bash
-# Build fedora-k8s
-cd packer/fedora-k8s
-packer init .
-packer build -except="docker-push" .
-
-# Build fedora-sway
-cd packer/fedora-sway
-packer init .
-packer build -except="docker-push" .
-```
-
 ### Custom Variables
 
 Override default variables:
 
 ```bash
-cd packer/fedora-base
+cd packer/fedora-exousia
 packer build \
   -var "fedora_version=43" \
-  -var "image_name=my-fedora" \
+  -var "image_name=my-fedora-exousia" \
   -var "image_tag=v1.0" \
   -var "registry=ghcr.io" \
   -var "registry_username=myuser" \
@@ -117,37 +87,38 @@ packer build \
 
 ### Ansible Provisioning
 
-All images use the same modular Ansible roles:
+The image uses modular Ansible roles:
 - `base_packages` - Core system packages
-- `kubernetes_tools` - K8s ecosystem (k8s image only)
-- `sway_desktop` - Desktop environment (sway image only)
+- `kubernetes_tools` - K8s ecosystem
+- `sway_desktop` - Desktop environment
 - `security` - Security hardening
 - `system_services` - systemd services
+- `virtualization` - libvirt and virt-manager
 
-Tags control which roles run for each image type.
+Tags control which roles are applied during the build.
 
 ## 🏗️ CI/CD Integration
 
 ### GitHub Actions
 
-The repository includes `.github/workflows/packer-build.yml` for automated builds:
+The repository includes `.github/workflows/packer-devsec-ci.yml` for automated builds:
 
 **Triggers:**
-- Push to main (builds and pushes all images)
+- Push to main (builds and pushes image)
 - Pull requests (builds without pushing)
-- Manual workflow dispatch (choose image type)
+- Manual workflow dispatch
+- Nightly builds at 5:30 AM UTC
 
 **Usage:**
 1. Set repository secrets:
    - `DOCKERHUB_USERNAME`
    - `DOCKERHUB_TOKEN`
 2. Push to main or trigger manually
-3. Images are built and pushed to Docker Hub
+3. Image is built and pushed to Docker Hub
 
 **Manual Trigger:**
 ```
-Actions → Build Container Images with Packer → Run workflow
-- Select image type (fedora-base, fedora-k8s, fedora-sway, or all)
+Actions → Packer DevSecOps CI → Run workflow
 - Choose whether to push to registry
 ```
 
@@ -157,22 +128,20 @@ Actions → Build Container Images with Packer → Run workflow
 
 ```bash
 # Pull from Docker Hub
-docker pull your-username/fedora-base:latest
-docker pull your-username/fedora-k8s:latest
-docker pull your-username/fedora-sway:latest
+podman pull your-username/fedora-exousia:latest
 
 # Run interactively
-docker run -it your-username/fedora-base:latest /bin/bash
+podman run -it your-username/fedora-exousia:latest /bin/bash
 
-# Verify Kubernetes tools (k8s image)
-docker run -it your-username/fedora-k8s:latest kubectl version --client
-docker run -it your-username/fedora-k8s:latest helm version
+# Verify Kubernetes tools
+podman run -it your-username/fedora-exousia:latest kubectl version --client
+podman run -it your-username/fedora-exousia:latest helm version
 ```
 
 ### Use as Base Image
 
 ```dockerfile
-FROM your-username/fedora-k8s:latest
+FROM your-username/fedora-exousia:latest
 
 # Add your application
 COPY app /app
@@ -185,13 +154,12 @@ Each build creates multiple tags:
 - `latest` - Latest build
 - `43` - Fedora version
 - `43-<timestamp>` - Specific build timestamp
-- `k3s-v1.30.5` - Version-specific (k8s image only)
 
 Example:
 ```bash
-docker pull your-username/fedora-k8s:latest
-docker pull your-username/fedora-k8s:43
-docker pull your-username/fedora-k8s:k3s-v1.30.5
+podman pull your-username/fedora-exousia:latest
+podman pull your-username/fedora-exousia:43
+podman pull your-username/fedora-exousia:43-1234567890
 ```
 
 ## 🔧 Customization
@@ -212,12 +180,10 @@ vim ansible/roles/sway_desktop/defaults/main.yml
 
 ### Change Base Image
 
-Edit the `source "docker"` block in any `.pkr.hcl`:
+Edit the `source "docker"` block in the `.pkr.hcl`:
 ```hcl
-source "docker" "fedora_base" {
-  image  = "quay.io/fedora/fedora:44"  # Change version
-  # or use different base
-  image  = "registry.fedoraproject.org/fedora:latest"
+source "docker" "fedora_exousia" {
+  image  = "quay.io/fedora-bootc/fedora-bootc:44"  # Change version
   ...
 }
 ```
@@ -248,18 +214,18 @@ After building, test the image:
 
 ```bash
 # Basic functionality
-docker run -it your-username/fedora-base:latest bash -c "dnf --version && python3 --version"
+podman run -it your-username/fedora-exousia:latest bash -c "dnf --version && python3 --version"
 
-# Kubernetes tools (k8s image)
-docker run -it your-username/fedora-k8s:latest bash -c "
+# Kubernetes tools
+podman run -it your-username/fedora-exousia:latest bash -c "
   kubectl version --client &&
   helm version &&
   k3s --version &&
   argocd version --client
 "
 
-# Sway desktop packages (sway image)
-docker run -it your-username/fedora-sway:latest bash -c "
+# Sway desktop packages
+podman run -it your-username/fedora-exousia:latest bash -c "
   swaymsg -v &&
   firefox --version
 "
@@ -275,15 +241,15 @@ docker run -it your-username/fedora-sway:latest bash -c "
 
 ## 📊 Build Output
 
-Each build generates `manifest.json`:
+Each build generates `manifest-<version>.json`:
 ```json
 {
   "builds": [
     {
-      "name": "fedora-base",
+      "name": "fedora-exousia-43",
       "builder_type": "docker",
       "build_time": 1234567890,
-      "artifact_id": "docker.io/username/fedora-base:latest"
+      "artifact_id": "docker.io/username/fedora-exousia:latest"
     }
   ]
 }
@@ -307,10 +273,8 @@ Both use the same Ansible playbooks for consistency.
 
 ## 🤝 Contributing
 
-To add a new template:
-1. Create directory in `packer/my-image/`
-2. Create `my-image.pkr.hcl` file
-3. Reference appropriate Ansible tags
-4. Add to GitHub Actions workflow
-5. Update this README
-6. Test the build locally
+To modify the template:
+1. Edit `packer/fedora-exousia/fedora-exousia.pkr.hcl`
+2. Reference appropriate Ansible tags
+3. Update this README
+4. Test the build locally

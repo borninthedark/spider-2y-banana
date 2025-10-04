@@ -28,9 +28,7 @@ This repository provides:
 │   └── requirements.yml       # Ansible Galaxy dependencies
 │
 ├── packer/                    # Packer templates for container images
-│   ├── fedora-base/          # Minimal Fedora container
-│   ├── fedora-k8s/           # Fedora with Kubernetes tools
-│   └── fedora-sway/          # Fedora with Sway desktop
+│   └── fedora-exousia/       # Complete Fedora development environment
 │
 ├── .github/workflows/        # GitHub Actions CI/CD
 │   ├── ansible-lint.yml      # Lint Ansible playbooks
@@ -72,7 +70,7 @@ export REGISTRY_USERNAME="your-dockerhub-username"
 export REGISTRY_PASSWORD="your-dockerhub-token"
 
 # Build container image
-cd packer/fedora-base
+cd packer/fedora-exousia
 packer init .
 packer build .
 ```
@@ -83,15 +81,11 @@ Built with Packer, provisioned with Ansible:
 
 | Image | Base | Includes | Use Case |
 |-------|------|----------|----------|
-| **fedora-base** | Fedora 43 | Core packages, security tools | Minimal container deployments |
-| **fedora-k8s** | Fedora 43 | k3s, kubectl, Helm, ArgoCD, k3d | Kubernetes development |
-| **fedora-sway** | Fedora 43 | Sway desktop, applications | Desktop containers |
+| **fedora-exousia** | Fedora 43 bootc | Base packages, K8s tools, Sway desktop, virtualization | Complete development environment |
 
 Pull from Docker Hub:
 ```bash
-docker pull your-username/fedora-base:latest
-docker pull your-username/fedora-k8s:latest
-docker pull your-username/fedora-sway:latest
+docker pull your-username/fedora-exousia:latest
 ```
 
 ## 🔧 Ansible Roles

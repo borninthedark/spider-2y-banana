@@ -233,13 +233,13 @@ ansible-playbook -i inventory/hosts playbooks/provision.yml \
 
 - [ ] Install Packer: `brew install packer` or `sudo dnf install packer`
 - [ ] Install Ansible: `pip install ansible`
-- [ ] Install Docker: `sudo dnf install docker && sudo systemctl start docker`
+- [ ] Install container tools: `sudo dnf install podman buildah skopeo`
 - [ ] Set environment variables:
   ```bash
   export REGISTRY_USERNAME="your-username"
   export REGISTRY_PASSWORD="your-token"
   ```
-- [ ] Build: `cd packer/fedora-base && packer init . && packer build .`
+- [ ] Build: `cd packer/fedora-exousia && packer init . && packer build .`
 
 ### For Ansible Provisioning
 

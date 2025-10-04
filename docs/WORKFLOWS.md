@@ -8,11 +8,11 @@ spider-2y-banana uses a comprehensive DevSecOps pipeline for Packer-built contai
 
 ## Workflows
 
-### 1. Packer DevSecOps CI
+### 1. DevSec Fedora Sericea Bootc CI
 
-**File:** `.github/workflows/packer-devsec-ci.yml`
+**File:** `.github/workflows/fedora-exousia-pipeline.yml`
 
-Complete Build → Test → Scan → Push → Sign pipeline for container images.
+Linear pipeline: Build → Test → Scan → Push → Sign → Summary
 
 #### Pipeline Stages
 
@@ -22,74 +22,53 @@ Complete Build → Test → Scan → Push → Sign pipeline for container images
 └─────────┘   └──────┘   └──────┘   └──────┘   └──────┘   └─────────┘
 ```
 
-##### Build Stage
+##### Build & Test Stage
 - Validates Ansible role structure
 - Initializes and validates Packer templates
-- Lints Ansible playbooks with ansible-lint
-- Builds container images with Packer + Ansible
-- Creates images for: fedora-base, fedora-k8s, fedora-sway
-
-##### Test Stage
-- Runs BATS (Bash Automated Testing System) tests
-- Validates package installations
-- Checks configuration files
-- Verifies scripts and services
-- Tests role-specific functionality
+- Builds fedora-exousia container image with Packer + Ansible
+- Runs BATS tests on built image
+- Validates package installations, configuration files, and services
+- Includes: base packages, Kubernetes tools, Sway desktop, virtualization
 
 ##### Scan Stage
 - **Trivy:** Scans for CRITICAL and HIGH vulnerabilities
-- **Semgrep:** Static code analysis for security issues
-- Results are non-blocking but reported
+- Results are non-blocking but reported as warnings
 
-##### Push Stage
-- Pushes images to Docker Hub
+##### Push & Sign Stage
+- Pushes image to Docker Hub
+- Signs with Cosign + Sigstore for supply chain security
 - Only runs on:
   - Push to main branch
   - Manual dispatch with push_image=true
   - Nightly scheduled builds
 - Skipped for pull requests
 
-##### Sign Stage
-- Signs images with Cosign + Sigstore
-- Provides cryptographic verification
-- Enables supply chain security
-
 ##### Summary Stage
-- Generates build artifacts
-- Creates step summary
-- Links to published images
+- Downloads build artifacts
+- Generates step summary with build status
+- Links to published and signed images
 - Provides resource documentation
 
 #### Triggers
 
 | Trigger | When | Behavior |
 |---------|------|----------|
-| **Push to main** | Code pushed to main branch | Full pipeline, push & sign images |
+| **Push to main** | Code pushed to main branch | Full pipeline: build, test, push & sign |
 | **Pull request** | PR opened/updated | Build & test only, no push |
-| **Manual dispatch** | User triggers workflow | Configurable: select image, push option |
-| **Nightly** | 5:30 AM UTC daily | Full pipeline for all images |
+| **Manual dispatch** | User triggers workflow | Configurable push option |
+| **Nightly** | 5:30 AM UTC daily | Full pipeline |
 
 #### Manual Dispatch Options
 
 ```yaml
-image_type:
-  - fedora-base   # Build base image only
-  - fedora-k8s    # Build k8s image only
-  - fedora-sway   # Build sway image only
-  - all          # Build all images (default)
-
-push_image: true/false  # Whether to push to Docker Hub
+push_image: true/false  # Whether to push to Docker Hub (default: true)
 ```
 
-#### Job Matrix
+#### Image Details
 
-Builds run in parallel:
-
-| Job | Timeout | Includes |
-|-----|---------|----------|
-| `build-fedora-base` | 30 min | Core packages, security |
-| `build-fedora-k8s` | 40 min | Base + Kubernetes tools |
-| `build-fedora-sway` | 50 min | Base + Sway desktop |
+| Image | Timeout | Includes |
+|-------|---------|----------|
+| `fedora-exousia` | 40 min | Base + K8s + Sway + Virtualization |
 
 ### 2. Ansible Lint
 
@@ -223,17 +202,20 @@ Each workflow run produces:
 Automatically generated after each run:
 
 ```markdown
-## 🚀 Packer Container Build Summary
+## 🚀 DevSec Fedora Sericea Bootc CI Summary
+
+### 🔨 Build & Test
+
+**Status:** ✅ Success
 
 **Configuration:**
 - Fedora Version: `43`
 - Registry: `docker.io`
 
-### 📦 Published Images
+### 📦 Published & Signed Image
 
-- **Base:** `docker.io/username/fedora-base:latest`
-- **K8s:** `docker.io/username/fedora-k8s:latest`
-- **Sway:** `docker.io/username/fedora-sway:latest`
+- `docker.io/username/fedora-exousia:latest`
+- Signed with Cosign + Sigstore
 
 ### 📚 Resources
 
@@ -245,12 +227,9 @@ Automatically generated after each run:
 ### PR Checks
 
 Pull requests show:
-- ✅ Build fedora-base
-- ✅ Build fedora-k8s
-- ✅ Build fedora-sway
+- ✅ Build & Test Image
 - ✅ Ansible lint
 - ⚠️  Trivy scan (warnings allowed)
-- ⚠️  Semgrep analysis (warnings allowed)
 
 ## Troubleshooting
 

@@ -101,7 +101,7 @@ Tags control which roles are applied during the build.
 
 ### GitHub Actions
 
-The repository includes `.github/workflows/packer-devsec-ci.yml` for automated builds:
+The repository includes `.github/workflows/fedora-exousia-pipeline.yml` for automated builds:
 
 **Triggers:**
 - Push to main (builds and pushes image)

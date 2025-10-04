@@ -21,20 +21,6 @@ setup_file() {
     export CONTAINER MOUNT_POINT
     echo "--- Container filesystem mounted at $MOUNT_POINT ---"
 
-    # Detect image type from tag name
-    if [[ "$TEST_IMAGE_TAG" == *"fedora-k8s"* ]]; then
-        IMAGE_TYPE="k8s"
-    elif [[ "$TEST_IMAGE_TAG" == *"fedora-sway"* ]]; then
-        IMAGE_TYPE="sway"
-    elif [[ "$TEST_IMAGE_TAG" == *"fedora-base"* ]]; then
-        IMAGE_TYPE="base"
-    else
-        IMAGE_TYPE="unknown"
-    fi
-
-    export IMAGE_TYPE
-    echo "--- Detected image type: $IMAGE_TYPE ---"
-
     # Detect Fedora version
     if [ -f "$MOUNT_POINT/etc/os-release" ]; then
         FEDORA_VERSION=$(grep -oP 'VERSION_ID=\K\d+' "$MOUNT_POINT/etc/os-release" || echo "unknown")
@@ -49,18 +35,7 @@ teardown_file() {
     buildah rm "$CONTAINER"
 }
 
-# Helper functions
-is_k8s_image() {
-    [[ "$IMAGE_TYPE" == "k8s" ]]
-}
-
-is_sway_image() {
-    [[ "$IMAGE_TYPE" == "sway" ]]
-}
-
-is_base_image() {
-    [[ "$IMAGE_TYPE" == "base" ]]
-}
+# fedora-exousia includes all features: base, k8s, and sway
 
 # --- OS / Fedora version checks ---
 
@@ -119,88 +94,52 @@ is_base_image() {
     assert_failure "rofi-wayland should be removed"
 }
 
-# --- Kubernetes Tools (k8s image only) ---
+# --- Kubernetes Tools ---
 
-@test "k3s should be installed in k8s image" {
-    if ! is_k8s_image; then
-        skip "Test only applies to fedora-k8s image"
-    fi
-
+@test "k3s should be installed" {
     run buildah run "$CONTAINER" -- k3s --version
     assert_success
     assert_output --partial "k3s version"
 }
 
-@test "kubectl should be installed in k8s image" {
-    if ! is_k8s_image; then
-        skip "Test only applies to fedora-k8s image"
-    fi
-
+@test "kubectl should be installed" {
     run buildah run "$CONTAINER" -- kubectl version --client
     assert_success
 }
 
-@test "Helm should be installed in k8s image" {
-    if ! is_k8s_image; then
-        skip "Test only applies to fedora-k8s image"
-    fi
-
+@test "Helm should be installed" {
     run buildah run "$CONTAINER" -- helm version
     assert_success
 }
 
-@test "ArgoCD CLI should be installed in k8s image" {
-    if ! is_k8s_image; then
-        skip "Test only applies to fedora-k8s image"
-    fi
-
+@test "ArgoCD CLI should be installed" {
     run buildah run "$CONTAINER" -- argocd version --client
     assert_success
 }
 
-@test "k3d should be installed in k8s image" {
-    if ! is_k8s_image; then
-        skip "Test only applies to fedora-k8s image"
-    fi
-
+@test "k3d should be installed" {
     run buildah run "$CONTAINER" -- k3d version
     assert_success
 }
 
-@test "k3s-rootless systemd service should exist in k8s image" {
-    if ! is_k8s_image; then
-        skip "Test only applies to fedora-k8s image"
-    fi
-
+@test "k3s-rootless systemd service should exist" {
     assert_file_exists "$MOUNT_POINT/etc/skel/.config/systemd/user/k3s-rootless.service"
 }
 
-@test "KUBECONFIG should be configured in .bashrc in k8s image" {
-    if ! is_k8s_image; then
-        skip "Test only applies to fedora-k8s image"
-    fi
-
+@test "KUBECONFIG should be configured in .bashrc" {
     run grep "KUBECONFIG" "$MOUNT_POINT/etc/skel/.bashrc"
     assert_success
     assert_output --partial "~/.kube/k3s.yaml"
 }
 
-# --- Sway Desktop (sway image only) ---
+# --- Sway Desktop ---
 
-@test "Sway should be installed in sway image" {
-    if ! is_sway_image; then
-        skip "Test only applies to fedora-sway image"
-    fi
-
+@test "Sway should be installed" {
     run buildah run "$CONTAINER" -- rpm -q sway-config-upstream
     assert_success "sway-config-upstream should be installed"
 }
 
-@test "Greetd should be installed in sway image" {
-    if ! is_sway_image; then
-        skip "Test only applies to fedora-sway image"
-    fi
-
+@test "Greetd should be installed" {
     run buildah run "$CONTAINER" -- rpm -q greetd
     assert_success "greetd should be installed"
 
@@ -208,11 +147,7 @@ is_base_image() {
     assert_success "tuigreet should be installed"
 }
 
-@test "Desktop applications should be installed in sway image" {
-    if ! is_sway_image; then
-        skip "Test only applies to fedora-sway image"
-    fi
-
+@test "Desktop applications should be installed" {
     run buildah run "$CONTAINER" -- rpm -q firefox
     assert_success "firefox should be installed"
 
@@ -220,27 +155,15 @@ is_base_image() {
     assert_success "thunar should be installed"
 }
 
-@test "Autotiling script should be present in sway image" {
-    if ! is_sway_image; then
-        skip "Test only applies to fedora-sway image"
-    fi
-
+@test "Autotiling script should be present" {
     assert_file_executable "$MOUNT_POINT/usr/local/bin/autotiling"
 }
 
-@test "Lid management script should be present in sway image" {
-    if ! is_sway_image; then
-        skip "Test only applies to fedora-sway image"
-    fi
-
+@test "Lid management script should be present" {
     assert_file_executable "$MOUNT_POINT/usr/local/bin/lid"
 }
 
-@test "Python i3ipc should be installed in sway image" {
-    if ! is_sway_image; then
-        skip "Test only applies to fedora-sway image"
-    fi
-
+@test "Python i3ipc should be installed" {
     run buildah run "$CONTAINER" -- rpm -q python3-i3ipc
     assert_success "python3-i3ipc should be installed for autotiling"
 }

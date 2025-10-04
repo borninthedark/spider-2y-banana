@@ -94,7 +94,7 @@ build {
 
     extra_arguments = [
       "--extra-vars",
-      "ansible_connection=docker enable_k8s_tools=true enable_sway_desktop=true enable_virtualization=true enable_plymouth=true",
+      "ansible_connection=local enable_k8s_tools=true enable_sway_desktop=true enable_virtualization=true enable_plymouth=true",
       "--tags",
       "base,security,k8s,sway,services,virtualization"
     ]
@@ -114,17 +114,15 @@ build {
   }
 
   // --- Tag and push image
-  post-processors {
-    post-processor "docker-tag" {
-      repository = "${var.registry}/${var.registry_username}/${var.image_name}"
-      tags       = ["${var.image_tag}", "${var.fedora_version}", "${var.fedora_version}-{{timestamp}}"]
-    }
+  post-processor "docker-tag" {
+    repository = "${var.registry}/${var.registry_username}/${var.image_name}"
+    tags       = ["${var.image_tag}", "${var.fedora_version}", "${var.fedora_version}-{{timestamp}}"]
+  }
 
-    post-processor "docker-push" {
-      login          = true
-      login_username = var.registry_username
-      login_password = var.registry_password
-    }
+  post-processor "docker-push" {
+    login          = true
+    login_username = var.registry_username
+    login_password = var.registry_password
   }
 
   post-processor "manifest" {

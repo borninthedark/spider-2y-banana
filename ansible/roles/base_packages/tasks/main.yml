@@ -12,7 +12,7 @@
 
 - name: Enable Cisco OpenH264 repository
   ansible.builtin.command:
-    cmd: dnf config-manager setopt fedora-cisco-openh264.enabled=1
+    cmd: dnf5 config-manager setopt fedora-cisco-openh264.enabled=1
   changed_when: false
 
 - name: Install core utilities

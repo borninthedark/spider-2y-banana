@@ -1,5 +1,5 @@
 ---
-name: DevSec Fedora Sericea Bootc CI
+name: Fedora Sericea Bootc DevSec CI
 
 on:
   push:

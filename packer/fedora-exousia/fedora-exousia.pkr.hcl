@@ -20,7 +20,7 @@ variable "fedora_version" {
   default = "43"
   validation {
     condition     = contains(["41", "42", "43", "rawhide"], var.fedora_version)
-    error_message = "Fedora version must be one of: 41, 42, 43, rawhide"
+    error_message = "Fedora version must be one of: 41, 42, 43, rawhide."
   }
 }
 

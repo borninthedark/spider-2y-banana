@@ -41,8 +41,8 @@ env:
 jobs:
   # ======================== BUILD, TEST, SCAN, PUSH, SIGN ========================= #
 
-  build-fedora-exousia:
-    name: Build & Test fedora-exousia
+  build:
+    name: Build & Test
     runs-on: ubuntu-latest
     timeout-minutes: 40
 

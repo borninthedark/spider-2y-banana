@@ -53,6 +53,10 @@ variable "registry_password" {
 source "docker" "fedora_exousia" {
   image  = "quay.io/fedora/fedora-bootc:${var.fedora_version}"
   commit = true
+
+  // Run as root to avoid tmpdir permission errors
+  run_command = ["-d", "-i", "-t", "--user", "root", "--entrypoint=/bin/sh", "--", "{{.Image}}"]
+
   changes = [
     "ENV CONTAINER=docker",
     "ENV K3S_VERSION=v1.30.5+k3s1",
@@ -65,11 +69,9 @@ source "docker" "fedora_exousia" {
 
 build {
   name = "fedora-exousia-${var.fedora_version}"
-  sources = [
-    "source.docker.fedora_exousia"
-  ]
+  sources = ["source.docker.fedora_exousia"]
 
-  // Install Python and Ansible requirements
+  // --- Ensure Python + dnf base tools installed
   provisioner "shell" {
     inline = [
       "dnf install -y python3 python3-pip sudo curl",
@@ -77,8 +79,15 @@ build {
     ]
   }
 
-  // Run Ansible provisioning with all features enabled
-  // Combines: base packages + security + k8s tools + sway desktop + virtualization
+  // --- FIX: precreate writable tmpdirs for Ansible
+  provisioner "shell" {
+    inline = [
+      "mkdir -p /tmp/.ansible/tmp /var/tmp/.ansible/tmp",
+      "chmod -R 1777 /tmp /var/tmp"
+    ]
+  }
+
+  // --- Run Ansible provisioning
   provisioner "ansible" {
     playbook_file = "../../ansible/playbooks/provision.yml"
     user          = "root"
@@ -96,17 +105,15 @@ build {
     ]
   }
 
-  // Clean up
+  // --- Cleanup to minimize image size
   provisioner "shell" {
     inline = [
       "dnf clean all",
-      "rm -rf /tmp/*",
-      "rm -rf /var/tmp/*",
-      "rm -rf /var/cache/dnf"
+      "rm -rf /tmp/* /var/tmp/* /var/cache/dnf"
     ]
   }
 
-  // Tag and push to registry
+  // --- Tag and push image
   post-processors {
     post-processor "docker-tag" {
       repository = "${var.registry}/${var.registry_username}/${var.image_name}"

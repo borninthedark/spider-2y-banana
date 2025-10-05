@@ -5,6 +5,7 @@
   ansible.builtin.dnf:
     name: "{{ virtualization_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Enable libvirtd service
   ansible.builtin.systemd:

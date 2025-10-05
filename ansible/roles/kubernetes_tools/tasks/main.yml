@@ -5,6 +5,7 @@
   ansible.builtin.dnf:
     name: "{{ k8s_base_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Create directories for binaries
   ansible.builtin.file:

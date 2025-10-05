@@ -43,6 +43,7 @@
           - dnf5
           - dnf5-plugins
         state: present
+        use_backend: dnf5
 
   roles:
     - role: base_packages

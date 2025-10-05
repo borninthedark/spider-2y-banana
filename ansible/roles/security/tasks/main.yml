@@ -9,6 +9,7 @@
       - pam-u2f
       - pamu2fcfg
     state: present
+    use_backend: dnf5
   when: enable_u2f | bool
 
 - name: Check if authselect profile exists

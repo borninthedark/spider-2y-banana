@@ -6,51 +6,61 @@
   ansible.builtin.dnf:
     name: "{{ sway_core_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install display manager packages
   ansible.builtin.dnf:
     name: "{{ display_manager_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install Plymouth packages
   ansible.builtin.dnf:
     name: "{{ plymouth_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install file manager and GVFS
   ansible.builtin.dnf:
     name: "{{ file_manager_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install media viewers
   ansible.builtin.dnf:
     name: "{{ media_viewer_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install screenshot tools
   ansible.builtin.dnf:
     name: "{{ screenshot_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install system control packages
   ansible.builtin.dnf:
     name: "{{ system_control_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install Bluetooth support
   ansible.builtin.dnf:
     name: "{{ bluetooth_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install power management tools
   ansible.builtin.dnf:
     name: "{{ power_management_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Install additional fonts
   ansible.builtin.dnf:
     name: "{{ font_packages }}"
     state: present
+    use_backend: dnf5
 
 - name: Enable Bluetooth service
   ansible.builtin.systemd:
@@ -68,6 +78,7 @@
   ansible.builtin.dnf:
     name: python3-i3ipc
     state: present
+    use_backend: dnf5
 
 - name: Deploy autotiling script
   ansible.builtin.copy:

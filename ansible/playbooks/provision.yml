@@ -14,14 +14,14 @@
   become: true
 
   vars:
-    fedora_version: 43
+    fedora_version: 42
     enable_plymouth: true
     enable_k8s_tools: true
     enable_virtualization: true
-    enable_sway_desktop: false
-    enable_graphical_target: false
-    enable_greetd: false
-    enable_rpmfusion_ostree: true
+    enable_sway_desktop: true
+    enable_graphical_target: true
+    enable_greetd: true
+    enable_rpmfusion_ostree: false
     plymouth_theme: bgrt-better-luks
 
   pre_tasks:
@@ -47,9 +47,6 @@
         use_backend: dnf5
 
   roles:
-    - role: rpmfusion_ostree
-      tags: [base, rpmfusion]
-      when: enable_rpmfusion_ostree | bool
 
     - role: base_packages
       tags: [base, packages]
@@ -76,6 +73,26 @@
       when: enable_virtualization | bool
 
   post_tasks:
+    - name: Verify dnf5 is working
+      ansible.builtin.command:
+        cmd: dnf5 --version
+      register: dnf5_check
+      changed_when: false
+      failed_when: dnf5_check.rc != 0
+      when: enable_rpmfusion_ostree | bool
+      tags: [rpmfusion]
+
+    - name: Install RPM Fusion repositories with dnf5
+      ansible.builtin.dnf:
+        name:
+          - "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ fedora_version }}.noarch.rpm"
+          - "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ fedora_version }}.noarch.rpm"
+        state: present
+        disable_gpg_check: true
+        use_backend: dnf5
+      when: enable_rpmfusion_ostree | bool
+      tags: [rpmfusion]
+
     - name: Display provisioning summary
       ansible.builtin.debug:
         msg:

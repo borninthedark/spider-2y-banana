@@ -1,0 +1,17 @@
+---
+# RPM Fusion ostree role defaults
+
+# Whether to enable RPM Fusion repositories
+rpmfusion_ostree_enable: true
+
+# Whether to install versioned repos (stage 1)
+rpmfusion_ostree_stage1_complete: false
+
+# Whether to swap to unversioned repos (stage 2)
+rpmfusion_ostree_stage2_complete: false
+
+# RPM Fusion mirror URL
+rpmfusion_ostree_mirror_url: "https://mirrors.rpmfusion.org"
+
+# Skip reboot (useful for testing or manual reboot control)
+rpmfusion_ostree_skip_reboot: false

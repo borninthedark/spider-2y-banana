@@ -1,0 +1,112 @@
+---
+# RPM Fusion setup for ostree-based Fedora systems
+# Based on: https://docs.fedoraproject.org/en-US/quick-docs/rpmfusion-setup/
+
+- name: Check if system is ostree-based
+  ansible.builtin.stat:
+    path: /run/ostree-booted
+  register: ostree_booted
+
+- name: Verify ostree system
+  ansible.builtin.fail:
+    msg: "This role is only for ostree-based systems (Silverblue, Kinoite, IoT)"
+  when: not ostree_booted.stat.exists
+
+- name: Check if versioned RPM Fusion repos are installed
+  ansible.builtin.command:
+    cmd: rpm -q rpmfusion-free-release rpmfusion-nonfree-release
+  register: rpmfusion_versioned_check
+  changed_when: false
+  failed_when: false
+
+- name: Check if unversioned RPM Fusion repos are installed
+  ansible.builtin.shell:
+    cmd: |
+      rpm-ostree status --json | jq -r '.deployments[0].packages[]' | grep -E '^rpmfusion-(free|nonfree)-release$'
+  register: rpmfusion_unversioned_check
+  changed_when: false
+  failed_when: false
+
+- name: Set stage completion facts
+  ansible.builtin.set_fact:
+    stage1_done: "{{ rpmfusion_versioned_check.rc == 0 }}"
+    stage2_done: "{{ rpmfusion_unversioned_check.rc == 0 }}"
+
+- name: Display current RPM Fusion status
+  ansible.builtin.debug:
+    msg:
+      - "Versioned repos installed: {{ stage1_done }}"
+      - "Unversioned repos installed: {{ stage2_done }}"
+
+# Stage 1: Install versioned RPM Fusion repositories
+- name: Stage 1 - Install versioned RPM Fusion repositories
+  block:
+    - name: Install versioned RPM Fusion repos via rpm-ostree
+      ansible.builtin.command:
+        cmd: >
+          rpm-ostree install
+          {{ rpmfusion_ostree_mirror_url }}/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+          {{ rpmfusion_ostree_mirror_url }}/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+      register: rpmfusion_stage1_install
+      changed_when: "'Staging deployment' in rpmfusion_stage1_install.stdout"
+      failed_when: rpmfusion_stage1_install.rc != 0 and 'already requested' not in rpmfusion_stage1_install.stderr
+
+    - name: Trigger reboot after Stage 1
+      ansible.builtin.set_fact:
+        rpmfusion_needs_reboot_stage1: true
+      when:
+        - rpmfusion_stage1_install.changed
+        - not rpmfusion_ostree_skip_reboot
+
+    - name: Reboot after Stage 1 installation
+      ansible.builtin.reboot:
+        reboot_timeout: 600
+        post_reboot_delay: 30
+      when: rpmfusion_needs_reboot_stage1 | default(false)
+
+  when:
+    - rpmfusion_ostree_enable
+    - not stage1_done or not stage2_done
+
+# Stage 2: Swap to unversioned repositories
+- name: Stage 2 - Replace with unversioned RPM Fusion repositories
+  block:
+    - name: Swap versioned repos for unversioned via rpm-ostree
+      ansible.builtin.command:
+        cmd: >
+          rpm-ostree update
+          --uninstall rpmfusion-free-release
+          --uninstall rpmfusion-nonfree-release
+          --install rpmfusion-free-release
+          --install rpmfusion-nonfree-release
+      register: rpmfusion_stage2_swap
+      changed_when: "'Staging deployment' in rpmfusion_stage2_swap.stdout"
+      failed_when: rpmfusion_stage2_swap.rc != 0 and 'already requested' not in rpmfusion_stage2_swap.stderr
+
+    - name: Trigger reboot after Stage 2
+      ansible.builtin.set_fact:
+        rpmfusion_needs_reboot_stage2: true
+      when:
+        - rpmfusion_stage2_swap.changed
+        - not rpmfusion_ostree_skip_reboot
+
+    - name: Reboot after Stage 2 swap
+      ansible.builtin.reboot:
+        reboot_timeout: 600
+        post_reboot_delay: 30
+      when: rpmfusion_needs_reboot_stage2 | default(false)
+
+  when:
+    - rpmfusion_ostree_enable
+    - stage1_done
+    - not stage2_done
+
+- name: Verify RPM Fusion installation
+  ansible.builtin.command:
+    cmd: rpm-ostree status
+  register: final_status
+  changed_when: false
+
+- name: Display final status
+  ansible.builtin.debug:
+    var: final_status.stdout_lines

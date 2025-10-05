@@ -101,8 +101,8 @@ build {
   // --- Cleanup to minimize image size
   provisioner "shell" {
     inline = [
-      "dnf clean all",
-      "rm -rf /tmp/* /var/tmp/* /var/cache/dnf"
+      "if command -v dnf5 &> /dev/null; then dnf5 clean all; else dnf clean all; fi",
+      "rm -rf /tmp/* /var/tmp/* /var/cache/dnf /var/cache/libdnf5"
     ]
   }
 

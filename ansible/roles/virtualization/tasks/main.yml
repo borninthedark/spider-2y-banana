@@ -2,9 +2,16 @@
 # Virtualization setup tasks
 
 - name: Install virtualization packages
+  community.general.dnf5:
+    name: "{{ virtualization_packages }}"
+    state: present
+  when: ansible_pkg_mgr == 'dnf5'
+
+- name: Install virtualization packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ virtualization_packages }}"
     state: present
+  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Enable libvirtd service
   ansible.builtin.systemd:

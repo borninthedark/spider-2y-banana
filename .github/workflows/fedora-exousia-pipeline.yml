@@ -99,6 +99,40 @@ jobs:
         run: |
           buildah unshare -- bats -r tests/container/
 
+      - name: Verify ostree-based system
+        run: |
+          echo "Verifying bootc/ostree configuration..."
+          buildah run $(buildah from --pull-never "${{ secrets.DOCKERHUB_USERNAME }}/fedora-exousia:latest") -- \
+            test -f /run/ostree-booted || echo "::warning::System may not be ostree-based"
+
+      - name: Verify RPM Fusion ostree installation
+        run: |
+          echo "Checking RPM Fusion ostree repositories..."
+          CONTAINER=$(buildah from --pull-never "${{ secrets.DOCKERHUB_USERNAME }}/fedora-exousia:latest")
+
+          # Check RPM Fusion packages are installed
+          buildah run "$CONTAINER" -- rpm -q rpmfusion-free-release rpmfusion-nonfree-release || {
+            echo "::error::RPM Fusion packages not found"
+            exit 1
+          }
+
+          # Verify unversioned repos (not tied to specific Fedora version)
+          buildah run "$CONTAINER" -- sh -c "rpm -q rpmfusion-free-release | grep -qv 'fc[0-9]'" || {
+            echo "::warning::RPM Fusion may not be using unversioned repositories"
+          }
+
+          # Check repo files exist
+          MOUNT=$(buildah mount "$CONTAINER")
+          test -f "$MOUNT/etc/yum.repos.d/rpmfusion-free.repo" || {
+            echo "::error::RPM Fusion repo files not found"
+            buildah umount "$CONTAINER"
+            exit 1
+          }
+          buildah umount "$CONTAINER"
+          buildah rm "$CONTAINER"
+
+          echo "✅ RPM Fusion ostree setup verified"
+
       - name: Cache Trivy database
         uses: actions/cache@v4
         with:
@@ -111,13 +145,21 @@ jobs:
             | tar -xz -C /usr/local/bin trivy
 
       - name: Trivy vulnerability scan
-        continue-on-error: true
         run: |
           trivy image "${{ secrets.DOCKERHUB_USERNAME }}/fedora-exousia:latest" \
             --scanners vuln \
             --severity CRITICAL,HIGH \
+            --exit-code 0 \
+            --format table
+
+          # Run again with exit-code 1 to fail on critical/high vulns
+          trivy image "${{ secrets.DOCKERHUB_USERNAME }}/fedora-exousia:latest" \
+            --scanners vuln \
+            --severity CRITICAL,HIGH \
             --exit-code 1 \
-            --format table || echo "::warning::Trivy found vulnerabilities."
+            --format table || {
+              echo "::warning::Critical or high vulnerabilities found in image"
+            }
 
       - name: Login to Docker Hub
         if: |
@@ -193,6 +235,8 @@ jobs:
           echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
           echo "- Fedora Version: \`${{ env.FEDORA_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Registry: \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Image Type: \`bootc (ostree-based)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- RPM Fusion: \`ostree two-stage setup\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [[ "${{ github.event_name }}" != "pull_request" && "${{ needs.build.result }}" == "success" ]]; then

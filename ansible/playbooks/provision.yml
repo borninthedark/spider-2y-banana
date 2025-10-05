@@ -21,6 +21,7 @@
     enable_sway_desktop: false
     enable_graphical_target: false
     enable_greetd: false
+    enable_rpmfusion_ostree: true
     plymouth_theme: bgrt-better-luks
 
   pre_tasks:
@@ -46,6 +47,10 @@
         use_backend: dnf5
 
   roles:
+    - role: rpmfusion_ostree
+      tags: [base, rpmfusion]
+      when: enable_rpmfusion_ostree | bool
+
     - role: base_packages
       tags: [base, packages]
 
@@ -76,6 +81,7 @@
         msg:
           - "Provisioning completed successfully!"
           - "Fedora version: {{ ansible_distribution_version }}"
+          - "RPM Fusion (ostree): {{ enable_rpmfusion_ostree }}"
           - "Plymouth enabled: {{ enable_plymouth }}"
           - "K8s tools enabled: {{ enable_k8s_tools }}"
           - "Virtualization enabled: {{ enable_virtualization }}"

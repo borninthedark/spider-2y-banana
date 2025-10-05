@@ -185,6 +185,45 @@ teardown_file() {
     assert_success
 }
 
+# --- RPM Fusion (ostree-based) ---
+
+@test "System should be ostree-based (bootc)" {
+    assert_file_exists "$MOUNT_POINT/run/ostree-booted" "System should be ostree-based"
+}
+
+@test "RPM Fusion free repository should be installed" {
+    run buildah run "$CONTAINER" -- rpm -q rpmfusion-free-release
+    assert_success "rpmfusion-free-release should be installed"
+}
+
+@test "RPM Fusion nonfree repository should be installed" {
+    run buildah run "$CONTAINER" -- rpm -q rpmfusion-nonfree-release
+    assert_success "rpmfusion-nonfree-release should be installed"
+}
+
+@test "RPM Fusion repos should be unversioned (not tied to specific Fedora release)" {
+    # Check that the installed packages are the unversioned variants
+    # Unversioned packages don't have fedora version in their release string
+    run buildah run "$CONTAINER" -- sh -c "rpm -q rpmfusion-free-release | grep -v 'fc[0-9]'"
+    assert_success "RPM Fusion should use unversioned repositories"
+
+    run buildah run "$CONTAINER" -- sh -c "rpm -q rpmfusion-nonfree-release | grep -v 'fc[0-9]'"
+    assert_success "RPM Fusion nonfree should use unversioned repositories"
+}
+
+@test "RPM Fusion repo files should exist" {
+    assert_file_exists "$MOUNT_POINT/etc/yum.repos.d/rpmfusion-free.repo"
+    assert_file_exists "$MOUNT_POINT/etc/yum.repos.d/rpmfusion-nonfree.repo"
+}
+
+@test "RPM Fusion repos should be enabled" {
+    run grep "enabled=1" "$MOUNT_POINT/etc/yum.repos.d/rpmfusion-free.repo"
+    assert_success "RPM Fusion free repo should be enabled"
+
+    run grep "enabled=1" "$MOUNT_POINT/etc/yum.repos.d/rpmfusion-nonfree.repo"
+    assert_success "RPM Fusion nonfree repo should be enabled"
+}
+
 # --- Virtualization ---
 
 @test "Podman should be installed" {

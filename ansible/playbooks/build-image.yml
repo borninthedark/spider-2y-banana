@@ -1,0 +1,89 @@
+---
+# ansible-bender playbook for building Fedora Exousia container images
+# Replaces Packer-based image building with native Ansible + buildah workflow
+#
+# Usage:
+#   ansible-bender build ./ansible/playbooks/build-image.yml
+#   ansible-bender build --extra-vars "fedora_version=43" ./ansible/playbooks/build-image.yml
+#   ansible-bender build --extra-vars "registry_username=myuser" ./ansible/playbooks/build-image.yml
+
+- name: Build Fedora Exousia Container Image
+  hosts: all
+
+  vars:
+    # Build configuration
+    fedora_version: "42"
+    image_name: "fedora-exousia"
+    image_tag: "latest"
+    registry: "docker.io"
+    registry_username: ""
+
+    # ansible-bender configuration
+    ansible_bender:
+      base_image: "quay.io/fedora/fedora-bootc:{{ fedora_version }}"
+
+      target_image:
+        name: "{{ registry }}/{{ registry_username }}/{{ image_name }}:{{ image_tag }}"
+        labels:
+          maintainer: "spider-2y-banana"
+          version: "{{ fedora_version }}"
+          description: "Fedora Exousia - Complete development environment with base packages, K8s tools, Sway desktop, and virtualization"
+          build_date: "{{ ansible_date_time.iso8601 }}"
+        environment:
+          CONTAINER: "docker"
+          K3S_VERSION: "v1.30.5+k3s1"
+          KUBECTL_VERSION: "v1.30.0"
+
+    # Provisioning flags
+    enable_plymouth: true
+    enable_k8s_tools: true
+    enable_virtualization: true
+    enable_sway_desktop: true
+    enable_graphical_target: true
+    enable_greetd: true
+    enable_rpmfusion_ostree: false
+    plymouth_theme: "bgrt-better-luks"
+
+  pre_tasks:
+    - name: Create Ansible temporary directory
+      ansible.builtin.file:
+        path: /tmp/.ansible/tmp
+        state: directory
+        mode: '1777'
+      tags: [always]
+
+    - name: Ensure /tmp is writable
+      ansible.builtin.file:
+        path: /tmp
+        mode: '1777'
+        state: directory
+      tags: [always]
+
+  tasks:
+    - name: Import provisioning playbook tasks
+      ansible.builtin.import_playbook: provision.yml
+      tags: [provision]
+
+  post_tasks:
+    - name: Clean up package cache
+      ansible.builtin.shell: |
+        if command -v dnf5 &> /dev/null; then
+          dnf5 clean all
+        else
+          dnf clean all
+        fi
+        rm -rf /tmp/* /var/tmp/* /var/cache/dnf /var/cache/libdnf5 2>/dev/null || true
+      args:
+        executable: /bin/bash
+      changed_when: false
+      tags: [cleanup, stop-layering]
+
+    - name: Display build summary
+      ansible.builtin.debug:
+        msg:
+          - "Build completed successfully!"
+          - "Image: {{ ansible_bender.target_image.name }}"
+          - "Base: {{ ansible_bender.base_image }}"
+          - "Fedora version: {{ fedora_version }}"
+          - "Components: K8s={{ enable_k8s_tools }}, Sway={{ enable_sway_desktop }}, Virt={{ enable_virtualization }}"
+      tags: [always]

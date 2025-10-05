@@ -39,7 +39,6 @@
               (pkgs.runCommand "ansible-content" {} ''
                 mkdir -p $out
                 cp -r ${./ansible} $out/ansible
-                cp -r ${./custom-scripts} $out/custom-scripts
               '')
             ];
           };

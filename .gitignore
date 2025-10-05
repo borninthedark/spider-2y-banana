@@ -31,3 +31,7 @@ settings.local.json
 *.tmp
 *.log
 .claude
+.claude-context
+
+# Archive
+archive/

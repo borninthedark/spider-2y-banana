@@ -1,12 +1,12 @@
 # spider-2y-banana
 
-Ansible playbooks and Packer templates for provisioning Fedora systems and building container images.
+Ansible playbooks and ansible-bender for provisioning Fedora systems and building container images.
 
 ## 🎯 Purpose
 
 This repository provides:
 1. **Ansible playbooks** - Provision Fedora systems with modular, reusable roles
-2. **Packer templates** - Build custom Fedora container images
+2. **ansible-bender** - Build custom Fedora container images using Ansible + buildah
 3. **Integration with exousia** - Referenced by exousia bootc builds for consistent provisioning
 
 ## 📁 Repository Structure
@@ -16,6 +16,7 @@ This repository provides:
 ├── ansible/                    # Ansible playbooks and roles
 │   ├── playbooks/
 │   │   ├── provision.yml      # Main provisioning playbook
+│   │   ├── build-image.yml    # ansible-bender container build playbook
 │   │   └── generate-readme.yml
 │   ├── roles/                 # Modular Ansible roles
 │   │   ├── base_packages/     # Core utilities and tools
@@ -27,15 +28,12 @@ This repository provides:
 │   ├── inventory/             # Inventory files
 │   └── requirements.yml       # Ansible Galaxy dependencies
 │
-├── packer/                    # Packer templates for container images
-│   └── fedora-exousia/       # Complete Fedora development environment
-│
 ├── .github/workflows/        # GitHub Actions CI/CD
 │   ├── ansible-lint.yml      # Lint Ansible playbooks
-│   └── packer-build.yml      # Build container images
+│   └── fedora-exousia-pipeline.yml  # Build container images with ansible-bender
 │
-└── docs/                     # Documentation
-    └── CONFIGURATION.md      # Variables and secrets guide
+└── tests/                    # Container image tests
+    └── container/            # BATS integration tests
 ```
 
 ## 🚀 Quick Start
@@ -57,35 +55,38 @@ ansible-playbook -i inventory/hosts playbooks/provision.yml --connection=local
 ansible-playbook -i inventory/hosts playbooks/provision.yml
 ```
 
-### Packer Container Builds
+### Container Image Builds
 
 ```bash
-# Install Packer
-brew install packer  # macOS
+# Install dependencies
+sudo dnf install buildah  # Fedora/RHEL
 # or
-sudo dnf install packer  # Fedora
+sudo apt-get install buildah  # Ubuntu/Debian
 
-# Set credentials
-export REGISTRY_USERNAME="your-dockerhub-username"
-export REGISTRY_PASSWORD="your-dockerhub-token"
+pip install ansible-bender
 
 # Build container image
-cd packer/fedora-exousia
-packer init .
-packer build .
+ansible-bender build \
+  --extra-vars "fedora_version=42 registry=docker.io registry_username=your-username" \
+  ansible/playbooks/build-image.yml
+
+# Push to registry
+buildah push docker.io/your-username/fedora-exousia:latest
 ```
 
 ## 📦 Available Images
 
-Built with Packer, provisioned with Ansible:
+Built with ansible-bender, provisioned with Ansible:
 
 | Image | Base | Includes | Use Case |
 |-------|------|----------|----------|
-| **fedora-exousia** | Fedora 43 bootc | Base packages, K8s tools, Sway desktop, virtualization | Complete development environment |
+| **fedora-exousia** | Fedora 42 bootc | Base packages, K8s tools, Sway desktop, virtualization | Complete development environment |
 
 Pull from Docker Hub:
 ```bash
-docker pull your-username/fedora-exousia:latest
+podman pull docker.io/your-username/fedora-exousia:latest
+# or
+docker pull docker.io/your-username/fedora-exousia:latest
 ```
 
 ## 🔧 Ansible Roles
@@ -180,25 +181,25 @@ Both use identical Ansible roles for consistent provisioning.
 
 ## 🏗️ CI/CD Workflows
 
-### Packer DevSecOps CI
+### Fedora Exousia DevSecOps CI
 Comprehensive DevSecOps pipeline for container images:
 
 **Stages:**
-1. **Build** - Packer builds with Ansible provisioning
+1. **Build** - ansible-bender builds with Ansible provisioning
 2. **Test** - BATS integration tests
-3. **Scan** - Trivy vulnerability scanning, Semgrep static analysis
+3. **Scan** - Trivy vulnerability scanning
 4. **Push** - Publish to Docker Hub (non-PR only)
 5. **Sign** - Cosign image signing with Sigstore
 6. **Summary** - Build artifacts and reports
 
 **Triggers:**
 - **Automatic:** Push to main, nightly at 5:30 AM UTC
-- **Manual:** Workflow dispatch (select image type)
+- **Manual:** Workflow dispatch (with push toggle)
 - **PR:** Build and test without pushing
 
 Trigger manually:
 ```
-Actions → Packer DevSecOps CI → Run workflow
+Actions → Fedora Sericea Bootc DevSec CI → Run workflow
 ```
 
 ### Ansible Lint
@@ -210,7 +211,7 @@ Runs on push/PR to `ansible/**`:
 
 - [Configuration Guide](docs/CONFIGURATION.md) - Variables, secrets, setup
 - [Ansible README](ansible/README.md) - Ansible playbooks guide
-- [Packer README](packer/README.md) - Packer templates guide
+- [ansible-bender Documentation](https://ansible-community.github.io/ansible-bender/) - Official docs
 
 ## 🛠️ Development
 
@@ -227,19 +228,21 @@ ansible-playbook playbooks/provision.yml --check
 ansible-playbook playbooks/provision.yml --tags base,security
 ```
 
-### Testing Packer Locally
+### Testing Container Builds Locally
 
 ```bash
-cd packer/fedora-base
-
-# Validate template
-packer validate .
-
 # Build without pushing
-packer build -except="docker-push" .
+ansible-bender build \
+  --extra-vars "fedora_version=42 registry=docker.io registry_username=test" \
+  ansible/playbooks/build-image.yml
 
-# Format HCL
-packer fmt .
+# Build with no cache
+ansible-bender build --no-cache \
+  --extra-vars "fedora_version=42" \
+  ansible/playbooks/build-image.yml
+
+# List built images
+buildah images
 ```
 
 ## 🤝 Contributing
@@ -247,7 +250,7 @@ packer fmt .
 1. Fork the repository
 2. Create a feature branch
 3. Make changes and test locally
-4. Run linters: `ansible-lint` and `packer validate`
+4. Run linters: `ansible-lint` and test builds with `ansible-bender`
 5. Submit pull request
 
 ## 📄 License
@@ -258,8 +261,8 @@ MIT License - See LICENSE file for details
 
 - Based on configuration from [exousia](https://github.com/borninthedark/exousia)
 - Fedora Project and bootc maintainers
-- Ansible and Packer communities
+- Ansible and ansible-bender communities
 
 ---
 
-**Built for Fedora systems with Ansible and Packer**
+**Built for Fedora systems with Ansible and ansible-bender**

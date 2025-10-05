@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# Container image content tests for spider-2y-banana Packer-built images
+# Container image content tests for spider-2y-banana ansible-bender-built images
 # Based on exousia tests, refined for Ansible-provisioned containers
 
 # Load Bats libraries
@@ -44,9 +44,9 @@ teardown_file() {
     assert_success "Should be running Fedora Linux"
 }
 
-@test "OS version should be Fedora 43" {
-    run grep 'VERSION_ID=43' "$MOUNT_POINT/etc/os-release"
-    assert_success "Should be Fedora 43"
+@test "OS version should be Fedora 42" {
+    run grep 'VERSION_ID=42' "$MOUNT_POINT/etc/os-release"
+    assert_success "Should be Fedora 42"
 }
 
 # --- Base Packages (All Images) ---

@@ -2,16 +2,9 @@
 # Kubernetes tools installation tasks
 
 - name: Install base Kubernetes packages
-  community.general.dnf5:
-    name: "{{ k8s_base_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install base Kubernetes packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ k8s_base_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Create directories for binaries
   ansible.builtin.file:

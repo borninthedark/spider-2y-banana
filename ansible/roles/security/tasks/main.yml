@@ -3,22 +3,13 @@
 # Based on exousia custom-scripts/config-authselect
 
 - name: Install authselect and PAM U2F packages
-  community.general.dnf5:
-    name:
-      - authselect
-      - pam-u2f
-      - pamu2fcfg
-    state: present
-  when: enable_u2f | bool and ansible_pkg_mgr == 'dnf5'
-
-- name: Install authselect and PAM U2F packages (dnf fallback)
   ansible.builtin.dnf:
     name:
       - authselect
       - pam-u2f
       - pamu2fcfg
     state: present
-  when: enable_u2f | bool and ansible_pkg_mgr != 'dnf5'
+  when: enable_u2f | bool
 
 - name: Check if authselect profile exists
   ansible.builtin.command:

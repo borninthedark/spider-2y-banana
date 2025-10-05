@@ -31,133 +31,64 @@
   changed_when: false
 
 - name: Install core utilities
-  community.general.dnf5:
-    name: "{{ base_packages_core_utilities }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install core utilities (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ base_packages_core_utilities }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install audio and media packages
-  community.general.dnf5:
-    name: "{{ base_packages_audio_media_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5' and base_packages_audio_media_packages | length > 0
-
-- name: Install audio and media packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ base_packages_audio_media_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5' and base_packages_audio_media_packages | length > 0
+  when: base_packages_audio_media_packages | length > 0
 
 - name: Install development tools
-  community.general.dnf5:
-    name: "{{ base_packages_developer_tools }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install development tools (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ base_packages_developer_tools }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install cloud tools
-  community.general.dnf5:
-    name: "{{ cloud_tools }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5' and cloud_tools | length > 0
-
-- name: Install cloud tools (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ cloud_tools }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5' and cloud_tools | length > 0
+  when: cloud_tools | length > 0
 
 - name: Install security tools
-  community.general.dnf5:
-    name: "{{ base_packages_security_tools }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install security tools (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ base_packages_security_tools }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install power user tools
-  community.general.dnf5:
-    name: "{{ base_packages_power_user_tools }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5' and base_packages_power_user_tools | length > 0
-
-- name: Install power user tools (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ base_packages_power_user_tools }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5' and base_packages_power_user_tools | length > 0
+  when: base_packages_power_user_tools | length > 0
 
 - name: Install extra packages
-  community.general.dnf5:
-    name: "{{ extra_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5' and extra_packages | length > 0
-
-- name: Install extra packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ extra_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5' and extra_packages | length > 0
+  when: extra_packages | length > 0
 
 - name: Install Plymouth packages
-  community.general.dnf5:
-    name: "{{ plymouth_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5' and plymouth_packages | length > 0
-
-- name: Install Plymouth packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ plymouth_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5' and plymouth_packages | length > 0
+  when: plymouth_packages | length > 0
 
 - name: Install virtualization packages
-  community.general.dnf5:
-    name: "{{ base_packages_virtualization_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5' and base_packages_virtualization_packages | length > 0
-
-- name: Install virtualization packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ base_packages_virtualization_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5' and base_packages_virtualization_packages | length > 0
+  when: base_packages_virtualization_packages | length > 0
 
 - name: Remove unwanted packages
-  community.general.dnf5:
-    name: "{{ packages_to_remove }}"
-    state: absent
-  when: ansible_pkg_mgr == 'dnf5' and packages_to_remove | length > 0
-
-- name: Remove unwanted packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ packages_to_remove }}"
     state: absent
-  when: ansible_pkg_mgr != 'dnf5' and packages_to_remove | length > 0
+  when: packages_to_remove | length > 0
 
 - name: Upgrade all packages
-  community.general.dnf5:
-    name: "*"
-    state: latest
-  when: ansible_pkg_mgr == 'dnf5' and base_packages_upgrade_all_packages | bool
-
-- name: Upgrade all packages (dnf fallback)
   ansible.builtin.dnf:
     name: "*"
     state: latest
-  when: ansible_pkg_mgr != 'dnf5' and base_packages_upgrade_all_packages | bool
+  when: base_packages_upgrade_all_packages | bool

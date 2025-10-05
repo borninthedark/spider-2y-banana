@@ -3,124 +3,54 @@
 # Based on exousia custom-pkgs/packages.sway
 
 - name: Install Sway core packages
-  community.general.dnf5:
-    name: "{{ sway_core_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install Sway core packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ sway_core_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install display manager packages
-  community.general.dnf5:
-    name: "{{ display_manager_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install display manager packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ display_manager_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install Plymouth packages
-  community.general.dnf5:
-    name: "{{ plymouth_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install Plymouth packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ plymouth_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install file manager and GVFS
-  community.general.dnf5:
-    name: "{{ file_manager_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install file manager and GVFS (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ file_manager_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install media viewers
-  community.general.dnf5:
-    name: "{{ media_viewer_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install media viewers (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ media_viewer_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install screenshot tools
-  community.general.dnf5:
-    name: "{{ screenshot_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install screenshot tools (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ screenshot_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install system control packages
-  community.general.dnf5:
-    name: "{{ system_control_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install system control packages (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ system_control_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install Bluetooth support
-  community.general.dnf5:
-    name: "{{ bluetooth_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install Bluetooth support (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ bluetooth_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install power management tools
-  community.general.dnf5:
-    name: "{{ power_management_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install power management tools (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ power_management_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Install additional fonts
-  community.general.dnf5:
-    name: "{{ font_packages }}"
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install additional fonts (dnf fallback)
   ansible.builtin.dnf:
     name: "{{ font_packages }}"
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Enable Bluetooth service
   ansible.builtin.systemd:
@@ -135,16 +65,9 @@
     state: started
 
 - name: Install Python i3ipc for autotiling
-  community.general.dnf5:
-    name: python3-i3ipc
-    state: present
-  when: ansible_pkg_mgr == 'dnf5'
-
-- name: Install Python i3ipc for autotiling (dnf fallback)
   ansible.builtin.dnf:
     name: python3-i3ipc
     state: present
-  when: ansible_pkg_mgr != 'dnf5'
 
 - name: Deploy autotiling script
   ansible.builtin.copy:

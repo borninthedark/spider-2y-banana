@@ -7,10 +7,17 @@
     path: /run/ostree-booted
   register: ostree_booted
 
-- name: Verify ostree system
+- name: Check if system is bootc-based
+  ansible.builtin.stat:
+    path: /usr/bin/bootc
+  register: bootc_binary
+
+- name: Verify ostree or bootc system
   ansible.builtin.fail:
-    msg: "This role is only for ostree-based systems (Silverblue, Kinoite, IoT)"
-  when: not ostree_booted.stat.exists
+    msg: "This role is only for ostree-based systems (Silverblue, Kinoite, IoT, bootc)"
+  when:
+    - not ostree_booted.stat.exists
+    - not bootc_binary.stat.exists
 
 - name: Check if versioned RPM Fusion repos are installed
   ansible.builtin.command:

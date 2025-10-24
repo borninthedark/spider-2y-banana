@@ -1,6 +1,6 @@
 # Spider-2y-Banana: GitOps Infrastructure Platform
 
-[![Build and Deploy](https://github.com/borninthedark/spider-2y-banana/workflows/Build%20and%20Deploy%20Resume/badge.svg)](https://github.com/borninthedark/spider-2y-banana/actions/workflows/build-deploy.yml)
+## Build and Deploy
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoft-azure)](https://azure.microsoft.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-k3s-326CE5?logo=kubernetes)](https://k3s.io/)

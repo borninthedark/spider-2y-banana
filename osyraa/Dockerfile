@@ -4,6 +4,12 @@ FROM klakegg/hugo:0.111.3-alpine AS builder
 WORKDIR /src
 COPY . .
 
+# Generate config.toml from template using environment variable
+ARG DOMAIN_NAME=princetonstrong.online
+RUN if [ -f config.toml.template ]; then \
+      sed "s/\${DOMAIN_NAME}/${DOMAIN_NAME}/g" config.toml.template > config.toml; \
+    fi
+
 RUN hugo --minify
 
 # Runtime stage

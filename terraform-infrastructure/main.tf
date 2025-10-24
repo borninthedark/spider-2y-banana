@@ -99,3 +99,14 @@ module "vms" {
   node_count          = var.node_count
   tags                = var.tags
 }
+
+# DNS Module (Azure DNS Zone and Records)
+module "dns" {
+  source = "./modules/dns"
+
+  resource_group_name = azurerm_resource_group.main.name
+  domain_name         = var.domain_name
+  environment         = var.environment
+  ingress_ip          = module.vms[0].public_ip  # Use first VM's public IP
+  tags                = var.tags
+}

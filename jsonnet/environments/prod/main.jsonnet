@@ -1,10 +1,14 @@
 // Production environment configuration
 local resume = import '../../components/resume.libsonnet';
 
+// Get domain from environment variable, with fallback
+local baseDomain = if std.extVar('DOMAIN_NAME') != '' then std.extVar('DOMAIN_NAME') else 'princetonstrong.online';
+
 local config = {
   namespace: 'resume',
   image: 'acrk3sprod.azurecr.io/resume:latest',
   replicas: 3,  // More replicas for production
+  domain: 'resume.' + baseDomain,
 };
 
 // Create resume application
@@ -12,7 +16,8 @@ local app = resume.new(
   name='resume',
   namespace=config.namespace,
   image=config.image,
-  replicas=config.replicas
+  replicas=config.replicas,
+  domain=config.domain
 );
 
 // Export all resources

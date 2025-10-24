@@ -8,7 +8,7 @@ local ingress = k.networking.v1.ingress;
 local serviceMonitor = k.monitoring.coreos.com.v1.serviceMonitor;
 
 {
-  new(name, namespace, image, replicas=2):: {
+  new(name, namespace, image, replicas=2, domain='resume.princetonstrong.online'):: {
     local this = self,
 
     config:: {
@@ -16,7 +16,7 @@ local serviceMonitor = k.monitoring.coreos.com.v1.serviceMonitor;
       namespace: namespace,
       image: image,
       replicas: replicas,
-      domain: 'resume.princetonstrong.online',
+      domain: domain,
       resources: {
         requests: {
           memory: '64Mi',

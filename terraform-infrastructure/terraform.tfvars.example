@@ -8,6 +8,7 @@ ssh_public_key = "ssh-rsa AAAAB3... your-public-key-here"
 node_count     = 1  # 1 for dev, 3 for prod HA
 vm_size        = "Standard_B2ms"
 disk_size_gb   = 128
+domain_name    = "princetonstrong.online"  # Your base domain name
 
 tags = {
   Project     = "lavish-k3s"

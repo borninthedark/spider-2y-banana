@@ -1,0 +1,22 @@
+baseURL = "https://resume.${DOMAIN_NAME}/"
+languageCode = "en-us"
+title = "Princeton A. Strong - Professional Resume"
+theme = "resume"
+
+[params]
+  name = "Princeton A. Strong"
+  tagline = "Platform Engineer"
+  email = "info@${DOMAIN_NAME}"
+  phone = "206-666-5568"
+  location = "Remote"
+  github = "github.com/borninthedark"
+
+  [params.about]
+    enable = true
+    title = "Professional Summary"
+    content = "Platform Engineer specializing in secure hybrid cloud & on-prem solutions by leveraging Python automation, Open Source technologies, & DevSecOps best practices."
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true

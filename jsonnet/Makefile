@@ -17,13 +17,13 @@ install:
 dev: install
 	@echo "Building dev environment manifests..."
 	@mkdir -p output/dev
-	jsonnet -J vendor -m output/dev environments/dev/main.jsonnet
+	jsonnet -J vendor -m output/dev --ext-str DOMAIN_NAME="${DOMAIN_NAME:-princetonstrong.online}" environments/dev/main.jsonnet
 
 # Build prod environment
 prod: install
 	@echo "Building prod environment manifests..."
 	@mkdir -p output/prod
-	jsonnet -J vendor -m output/prod environments/prod/main.jsonnet
+	jsonnet -J vendor -m output/prod --ext-str DOMAIN_NAME="${DOMAIN_NAME:-princetonstrong.online}" environments/prod/main.jsonnet
 
 # Format jsonnet files
 fmt:

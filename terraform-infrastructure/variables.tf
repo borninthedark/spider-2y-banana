@@ -55,6 +55,12 @@ variable "disk_size_gb" {
   }
 }
 
+variable "domain_name" {
+  description = "Base domain name for all services (e.g., princetonstrong.online)"
+  type        = string
+  default     = "princetonstrong.online"
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)

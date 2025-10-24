@@ -2,19 +2,38 @@
 *.tfstate
 *.tfstate.*
 .terraform/
+.terraform.lock.hcl
 terraform.tfvars
+*.tfvars
+*.auto.tfvars
+terraform.tfplan
+*.tfplan
 outputs.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Bicep
+*.parameters.json.backup
 
 # Ansible
 *.retry
 ansible/*.log
 .vault_password
 group_vars/all.yml.backup
+*.vault
+.ansible/
 
 # Kubernetes
 kubeconfig
 *.kubeconfig
 k3s.yaml
+*.kubeconfig.backup
 
 # Hugo
 public/
@@ -27,19 +46,64 @@ resources/
 *.swp
 *.swo
 *~
+.fleet/
+.vs/
+*.iml
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+*.lnk
 
-# Secrets
+# Secrets & Credentials
 *.pem
 *.key
 *_rsa
+*_rsa.pub
+*_dsa
+*_ecdsa
+*_ed25519
 secrets/
 *.env
-.env*
+.env
+.env.*
 sp-credentials.json
+credentials.json
+*credentials*.json
+*.crt
+*.csr
+*.der
+*.p12
+*.pfx
+*.cer
+*.config.secret
+auth.json
+service-account.json
+gcloud-service-key.json
+**/keys/**
+**/certs/**
+
+# Cloud Provider Credentials
+.aws/credentials
+.azure/
+.kube/config
+gcloud/
+**/terraform.rc
+.azureauth
+
+# SSH
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+known_hosts
+authorized_keys
+
+# GPG
+*.gpg
+*.asc
+secring.gpg
 
 # Python
 __pycache__/
@@ -49,15 +113,46 @@ __pycache__/
 .Python
 venv/
 ENV/
+env/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
 
-# Node
+# Node / JavaScript
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.npm
+.yarn/
+package-lock.json.backup
+
+# Go
+# Binary output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.sum.backup
+vendor/
+
+# Test artifacts
+coverage.out
+coverage.html
+*.coverprofile
 
 # Logs
 *.log
+logs/
+*.log.*
 
 # Temporary files
 tmp/
@@ -65,9 +160,29 @@ temp/
 *.tmp
 *.bak
 *.backup
+*.swp
+*.swo
+*~
 
 # Azure
 .azure/
 
 # Deployment notes
 DEPLOYMENT_NOTES.md
+notes.md
+TODO.md
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.backup
+*.old
+*.orig
+
+# Sensitive documentation
+PASSWORDS.md
+SECRETS.md
+KEYS.md

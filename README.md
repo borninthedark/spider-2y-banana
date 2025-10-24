@@ -1,5 +1,11 @@
 # Spider-2y-Banana: GitOps Infrastructure Platform
 
+[![Build and Deploy](https://github.com/borninthedark/spider-2y-banana/workflows/Build%20and%20Deploy%20Resume/badge.svg)](https://github.com/borninthedark/spider-2y-banana/actions/workflows/build-deploy.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoft-azure)](https://azure.microsoft.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-k3s-326CE5?logo=kubernetes)](https://k3s.io/)
+[![GitOps](https://img.shields.io/badge/GitOps-ArgoCD-EF7B4D?logo=argo)](https://argo-cd.readthedocs.io/)
+
 A comprehensive GitOps demonstration platform showcasing modern cloud-native infrastructure practices using Bicep, Ansible, Crossplane, ArgoCD, and Kubernetes.
 
 ## 🎯 Project Overview
@@ -405,7 +411,20 @@ kubectl describe ingress resume -n resume
 kubectl get certificate -n resume
 ```
 
-## 📚 Additional Resources
+## 📚 Documentation
+
+### Project Documentation
+
+- **[GitHub Secrets Setup](.github/SECRETS.md)** - Required secrets for GitHub Actions workflows
+- **[Security Hardening Guide](docs/security-hardening.md)** - Comprehensive security hardening recommendations
+- **[Deployment Guide](DEPLOYMENT.md)** - Complete step-by-step deployment instructions
+- **[Quick Start Guide](QUICKSTART.md)** - Fast-track setup for getting started quickly
+- **[Project Summary](PROJECT_SUMMARY.md)** - Detailed project overview and architecture
+- **[Jsonnet Integration](JSONNET_INTEGRATION.md)** - Advanced configuration templating with Jsonnet
+- **[Resume App Documentation](osyraa/README.md)** - Hugo-based resume application details
+- **[Test Suite Documentation](osyraa/tests/README.md)** - Testing framework and guidelines
+
+### External Resources
 
 - [Azure Bicep Documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
 - [Ansible Documentation](https://docs.ansible.com/)

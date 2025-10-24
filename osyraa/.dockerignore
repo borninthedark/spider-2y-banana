@@ -1,9 +1,68 @@
+# Version control
 .git
+.gitignore
 .github
+
+# Docker files
 .dockerignore
 Dockerfile
+docker-compose.yml
+
+# Documentation
 README.md
-tests
-node_modules
-public
-resources
+*.md
+docs/
+
+# Tests
+tests/
+*.test
+coverage.*
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+public/
+resources/
+.hugo_build.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and credentials
+*.env
+.env*
+*.pem
+*.key
+*_rsa
+secrets/
+credentials.json
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# CI/CD
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Development files
+Makefile
+*.sh

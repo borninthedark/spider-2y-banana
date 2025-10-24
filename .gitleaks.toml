@@ -1,0 +1,162 @@
+# Gitleaks configuration file for secret detection
+# https://github.com/gitleaks/gitleaks
+
+title = "Spider-2y-Banana Gitleaks Config"
+
+[[rules]]
+id = "azure-subscription-id"
+description = "Azure Subscription ID"
+regex = '''[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+tags = ["azure", "subscription"]
+
+[[rules]]
+id = "azure-storage-account-key"
+description = "Azure Storage Account Key"
+regex = '''(?i)(?:storage|account).{0,20}key.{0,20}[=:]\s*['"]?([a-z0-9/+]{86}==)['"]?'''
+tags = ["azure", "storage", "key"]
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''AKIA[0-9A-Z]{16}'''
+tags = ["aws", "key"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Access Key"
+regex = '''(?i)aws.{0,20}secret.{0,20}[=:]\s*['"]?([a-z0-9/+=]{40})['"]?'''
+tags = ["aws", "secret"]
+
+[[rules]]
+id = "gcp-service-account"
+description = "GCP Service Account Key"
+regex = '''"type": "service_account"'''
+path = '''\.json$'''
+tags = ["gcp", "service-account"]
+
+[[rules]]
+id = "github-pat"
+description = "GitHub Personal Access Token"
+regex = '''ghp_[a-zA-Z0-9]{36}'''
+tags = ["github", "token"]
+
+[[rules]]
+id = "github-oauth"
+description = "GitHub OAuth Token"
+regex = '''gho_[a-zA-Z0-9]{36}'''
+tags = ["github", "oauth"]
+
+[[rules]]
+id = "github-app"
+description = "GitHub App Token"
+regex = '''(ghu|ghs)_[a-zA-Z0-9]{36}'''
+tags = ["github", "app"]
+
+[[rules]]
+id = "gitlab-pat"
+description = "GitLab Personal Access Token"
+regex = '''glpat-[a-zA-Z0-9\-]{20}'''
+tags = ["gitlab", "token"]
+
+[[rules]]
+id = "ssh-private-key"
+description = "SSH Private Key"
+regex = '''-----BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY-----'''
+tags = ["ssh", "private-key"]
+
+[[rules]]
+id = "pgp-private-key"
+description = "PGP Private Key"
+regex = '''-----BEGIN PGP PRIVATE KEY BLOCK-----'''
+tags = ["pgp", "private-key"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:api|token|key|secret|password)[-_]?(?:key|token|secret)?\s*[=:]\s*['"]?([a-z0-9_\-]{32,})['"]?'''
+tags = ["api", "generic"]
+
+[[rules]]
+id = "slack-token"
+description = "Slack Token"
+regex = '''xox[baprs]-[0-9a-zA-Z]{10,48}'''
+tags = ["slack", "token"]
+
+[[rules]]
+id = "slack-webhook"
+description = "Slack Webhook URL"
+regex = '''https://hooks\.slack\.com/services/T[a-zA-Z0-9_]{8,12}/B[a-zA-Z0-9_]{8,12}/[a-zA-Z0-9_]{24}'''
+tags = ["slack", "webhook"]
+
+[[rules]]
+id = "docker-config"
+description = "Docker Auth Config"
+regex = '''"auth":\s*"[a-zA-Z0-9+/=]{20,}"'''
+path = '''\.dockercfg|config\.json'''
+tags = ["docker", "auth"]
+
+[[rules]]
+id = "kubernetes-token"
+description = "Kubernetes Service Account Token"
+regex = '''eyJhbGciOiJSUzI1NiIs[a-zA-Z0-9/+=\-_]+'''
+tags = ["kubernetes", "token"]
+
+[[rules]]
+id = "generic-password"
+description = "Generic Password"
+regex = '''(?i)password\s*[=:]\s*['"]?([^'"\s]{8,})['"]?'''
+tags = ["password", "generic"]
+[rules.allowlist]
+paths = [
+    '''\.md$''',
+    '''\.example$''',
+    '''\.sample$''',
+    '''\.template$''',
+    '''README''',
+    '''test'''
+]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[a-zA-Z0-9_\-]+\.eyJ[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+'''
+tags = ["jwt", "token"]
+
+[[rules]]
+id = "azure-service-principal"
+description = "Azure Service Principal Credentials"
+path = '''sp-credentials\.json$'''
+tags = ["azure", "service-principal"]
+
+[[rules]]
+id = "terraform-tfvars"
+description = "Terraform Variables File"
+path = '''\.tfvars$'''
+tags = ["terraform", "variables"]
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+    '''\.git/''',
+    '''node_modules/''',
+    '''vendor/''',
+    '''\.terraform/''',
+    '''go\.sum$''',
+    '''package-lock\.json$''',
+    '''yarn\.lock$''',
+]
+
+commits = []
+
+# Example values that are safe to commit
+regexes = [
+    '''example\.com''',
+    '''localhost''',
+    '''127\.0\.0\.1''',
+    '''0\.0\.0\.0''',
+    '''YOUR_.*_HERE''',
+    '''REPLACE_.*''',
+    '''<.*>''',
+    '''\$\{.*\}''',
+    '''\{\{.*\}\}''',
+]

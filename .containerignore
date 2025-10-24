@@ -1,0 +1,123 @@
+# Container build ignore file
+# This file is used by various container build tools
+
+# Version control
+.git
+.gitignore
+.github
+.gitlab
+
+# Docker files
+.dockerignore
+.containerignore
+Dockerfile*
+docker-compose*.yml
+
+# Documentation
+README.md
+*.md
+LICENSE
+docs/
+
+# Tests
+tests/
+test/
+*.test
+*_test.go
+coverage.*
+*.coverprofile
+
+# Dependencies that will be rebuilt
+node_modules/
+vendor/
+venv/
+.venv/
+
+# Build artifacts
+public/
+resources/
+.hugo_build.lock
+dist/
+build/
+target/
+
+# IDE and editor files
+.vscode/
+.idea/
+.fleet/
+.vs/
+*.swp
+*.swo
+*.swn
+*~
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets and credentials
+*.env
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+secrets/
+credentials*.json
+auth.json
+service-account*.json
+**/keys/**
+**/certs/**
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+*.cache
+
+# CI/CD
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+.circleci/
+.github/workflows/
+
+# Development files
+Makefile
+*.sh
+*.bash
+scripts/
+
+# Package manager files
+package-lock.json
+yarn.lock
+Gemfile.lock
+Pipfile.lock
+poetry.lock
+go.sum
+
+# Configuration management
+ansible/
+terraform/
+*.tfvars
+*.tfstate
+.terraform/
+
+# Kubernetes manifests (not needed in image)
+k8s/
+kubernetes/
+manifests/
+*.yaml
+*.yml

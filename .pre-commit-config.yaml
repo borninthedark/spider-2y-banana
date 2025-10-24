@@ -1,0 +1,125 @@
+# Pre-commit hooks for secret detection and code quality
+# Install: pip install pre-commit
+# Setup: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ['--allow-multiple-documents']
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: detect-aws-credentials
+        args: ['--allow-missing-credentials']
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Secret detection with Gitleaks
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.1
+    hooks:
+      - id: gitleaks
+
+  # Terraform/Bicep
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.86.0
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+      - id: terraform_tflint
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+      - id: terraform_docs
+        args:
+          - --hook-config=--path-to-file=README.md
+          - --hook-config=--add-to-existing-file=true
+          - --hook-config=--create-file-if-not-exist=true
+
+  # Ansible
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v6.22.1
+    hooks:
+      - id: ansible-lint
+        files: \.(yaml|yml)$
+        exclude: '.github/|kubernetes/|k8s/'
+
+  # Dockerfile
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: ['--ignore', 'DL3018', '--ignore', 'DL3008']
+
+  # Go
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.55.2
+    hooks:
+      - id: golangci-lint
+        args: ['--timeout=5m']
+
+  # Shell scripts
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        args: ['-e', 'SC1091']
+
+  # Markdown
+  - repo: https://github.com/markdownlint/markdownlint
+    rev: v0.12.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix']
+        exclude: 'vendor/'
+
+  # YAML formatting
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.11.0
+    hooks:
+      - id: pretty-format-yaml
+        args: ['--autofix', '--indent', '2']
+        exclude: '.github/|kubernetes/|k8s/|crossplane/'
+
+# Custom local hooks
+  - repo: local
+    hooks:
+      - id: check-terraform-tfvars
+        name: Prevent committing terraform.tfvars
+        entry: 'terraform.tfvars files should not be committed'
+        language: fail
+        files: 'terraform\.tfvars$'
+
+      - id: check-sp-credentials
+        name: Prevent committing service principal credentials
+        entry: 'Service principal credentials should not be committed'
+        language: fail
+        files: 'sp-credentials\.json$'
+
+      - id: check-env-files
+        name: Prevent committing .env files
+        entry: '.env files should not be committed'
+        language: fail
+        files: '\.env$|\.env\..*$'
+
+      - id: check-kubeconfig
+        name: Prevent committing kubeconfig
+        entry: 'kubeconfig files should not be committed'
+        language: fail
+        files: 'kubeconfig|\.kubeconfig$|k3s\.yaml$'
+
+      - id: check-ansible-vault-password
+        name: Prevent committing Ansible vault password
+        entry: 'Ansible vault password should not be committed'
+        language: fail
+        files: '\.vault_password$'

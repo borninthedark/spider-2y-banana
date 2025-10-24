@@ -92,6 +92,11 @@ gcloud/
 **/terraform.rc
 .azureauth
 
+# Terraform Cloud Credentials
+.terraform.d/
+credentials.tfrc.json
+.terraformrc
+
 # SSH
 id_rsa
 id_dsa

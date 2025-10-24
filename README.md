@@ -6,13 +6,13 @@
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-k3s-326CE5?logo=kubernetes)](https://k3s.io/)
 [![GitOps](https://img.shields.io/badge/GitOps-ArgoCD-EF7B4D?logo=argo)](https://argo-cd.readthedocs.io/)
 
-A comprehensive GitOps demonstration platform showcasing modern cloud-native infrastructure practices using Bicep, Ansible, Crossplane, ArgoCD, and Kubernetes.
+A comprehensive GitOps demonstration platform showcasing modern cloud-native infrastructure practices using Terraform, Ansible, Crossplane, ArgoCD, and Kubernetes.
 
 ## 🎯 Project Overview
 
 This project demonstrates a complete GitOps workflow for managing cloud infrastructure and applications on Azure using:
 
-- **Bicep**: Azure infrastructure provisioning (VMs, networking, Key Vault, ACR)
+- **Terraform**: Azure infrastructure provisioning (VMs, networking, Key Vault, ACR) with Terraform Cloud remote state
 - **Ansible**: Automated k3s cluster bootstrapping and platform configuration
 - **Crossplane**: Kubernetes-native Azure resource management
 - **ArgoCD**: GitOps-based application and infrastructure delivery
@@ -27,7 +27,8 @@ This project demonstrates a complete GitOps workflow for managing cloud infrastr
 │                    Git Repositories                         │
 ├─────────────────────────────────────────────────────────────┤
 │  Infrastructure     │  GitOps Repo     │  Application Repo  │
-│  (Bicep modules)    │  (ArgoCD)        │  (Hugo + CI/CD)    │
+│  (Terraform + TF    │  (ArgoCD)        │  (Hugo + CI/CD)    │
+│   Cloud)            │                  │                    │
 └──────────┬──────────┴─────────┬────────┴──────────┬─────────┘
            │                    │                   │
            ▼                    ▼                   ▼
@@ -66,21 +67,34 @@ This project demonstrates a complete GitOps workflow for managing cloud infrastr
 
 - Azure subscription
 - Azure CLI installed and configured
+- Terraform (>= 1.5.0)
+- Terraform Cloud account (DefiantEmissary organization)
 - SSH key pair
 - Git
 - Ansible (>= 2.14)
 
-### 1. Deploy Infrastructure with Bicep
+### 1. Authenticate to Terraform Cloud
 
 ```bash
-cd bicep-infrastructure
+# Interactive login (recommended)
+terraform login
 
-# Update parameters file with your SSH public key
-vim parameters.dev.json
+# Or set environment variable
+export TF_TOKEN_app_terraform_io="your-token"
+```
 
-# Create resource group and deploy
+### 2. Deploy Infrastructure with Terraform
+
+```bash
+cd terraform-infrastructure
+
+# Copy and update terraform.tfvars with your SSH public key
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars
+
+# Deploy using the automated script
 cd scripts
-./deploy.sh dev eastus
+./deploy.sh dev
 ```
 
 This will create:
@@ -90,23 +104,23 @@ This will create:
 - Azure Key Vault
 - Azure Container Registry
 
-### 2. Create Service Principal for Crossplane
+### 3. Create Service Principal for Crossplane
 
 ```bash
-cd bicep-infrastructure/scripts
+cd terraform-infrastructure/scripts
 ./create-service-principal.sh dev
 ```
 
 Save the credentials output - you'll need them for Ansible configuration.
 
-### 3. Configure Ansible Variables
+### 4. Configure Ansible Variables
 
 ```bash
 cd ansible
 vim group_vars/all.yml
 ```
 
-Update the following values with outputs from Bicep deployment:
+Update the following values with outputs from Terraform deployment:
 - `azure_subscription_id`
 - `azure_tenant_id`
 - `azure_client_id`
@@ -114,7 +128,7 @@ Update the following values with outputs from Bicep deployment:
 - `azure_key_vault_name`
 - `acr_login_server`
 
-### 4. Bootstrap k3s Cluster with Ansible
+### 5. Bootstrap k3s Cluster with Ansible
 
 ```bash
 cd ansible
@@ -133,7 +147,7 @@ This will install:
 - External Secrets Operator
 - Helm and kubectl
 
-### 5. Access the Cluster
+### 6. Access the Cluster
 
 ```bash
 # Get kubeconfig from the VM
@@ -145,7 +159,7 @@ kubectl get nodes
 kubectl get pods -A
 ```
 
-### 6. Access ArgoCD
+### 7. Access ArgoCD
 
 ```bash
 # Get ArgoCD admin password
@@ -158,7 +172,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 echo "ArgoCD URL: http://${VM_IP}:80"
 ```
 
-### 7. Deploy GitOps Applications
+### 8. Deploy GitOps Applications
 
 ```bash
 # Apply the App of Apps pattern
@@ -168,7 +182,7 @@ kubectl apply -f gitops/bootstrap/app-of-apps.yaml
 kubectl get applications -n argocd -w
 ```
 
-### 8. Configure DNS
+### 9. Configure DNS
 
 Point your domain records to the cluster:
 ```
@@ -176,7 +190,7 @@ resume.princetonstrong.online   -> <VM_PUBLIC_IP>
 grafana.princetonstrong.online  -> <VM_PUBLIC_IP>
 ```
 
-### 9. Build and Deploy Resume App
+### 10. Build and Deploy Resume App
 
 ```bash
 cd osyraa
@@ -200,17 +214,21 @@ GitHub Actions will:
 
 ```
 spider-2y-banana/
-├── bicep-infrastructure/       # Azure infrastructure as code
-│   ├── modules/                # Reusable Bicep modules
-│   │   ├── network.bicep
-│   │   ├── vm.bicep
-│   │   ├── keyvault.bicep
-│   │   └── acr.bicep
-│   ├── main.bicep              # Main orchestration
-│   ├── parameters.dev.json     # Dev environment params
+├── terraform-infrastructure/   # Azure infrastructure as code
+│   ├── modules/                # Reusable Terraform modules
+│   │   ├── network/
+│   │   ├── vm/
+│   │   ├── keyvault/
+│   │   └── acr/
+│   ├── main.tf                 # Main orchestration
+│   ├── variables.tf            # Input variables
+│   ├── outputs.tf              # Output values
+│   ├── terraform.tfvars.example # Example variables
 │   └── scripts/                # Deployment scripts
 │       ├── deploy.sh
-│       └── create-service-principal.sh
+│       ├── deploy.py
+│       ├── create-service-principal.sh
+│       └── create_service_principal.py
 │
 ├── ansible/                    # Configuration management
 │   ├── inventory/              # Dynamic Azure inventory
@@ -259,10 +277,11 @@ spider-2y-banana/
 
 ## 🔧 Key Components
 
-### Bicep Infrastructure
-- **Purpose**: Bootstrap Azure foundation
+### Terraform Infrastructure
+- **Purpose**: Bootstrap Azure foundation with remote state management
 - **Manages**: VMs, networking, Key Vault, ACR, service principals
-- **Pattern**: Reusable modules with environment-specific parameters
+- **Pattern**: Modular architecture with Terraform Cloud backend
+- **State**: Remote state managed via Terraform Cloud (DefiantEmissary org)
 
 ### Ansible Automation
 - **Purpose**: Configure and bootstrap Kubernetes
@@ -362,13 +381,16 @@ nginx_connections_active{namespace="resume"}
 
 ## 🚨 Troubleshooting
 
-### Bicep Deployment Fails
+### Terraform Deployment Fails
 ```bash
-# Check deployment logs
-az deployment group show -g rg-spider-2y-banana-dev -n <deployment-name>
+# Validate configuration
+terraform validate
 
-# Validate template
-az deployment group validate -g rg-spider-2y-banana-dev --template-file main.bicep
+# Check plan before applying
+terraform plan
+
+# View Terraform Cloud run logs
+# Visit: https://app.terraform.io/app/DefiantEmissary/workspaces/spider-2y-banana
 ```
 
 ### Ansible Playbook Fails
@@ -426,7 +448,9 @@ kubectl get certificate -n resume
 
 ### External Resources
 
-- [Azure Bicep Documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
+- [Terraform Documentation](https://www.terraform.io/docs)
+- [Terraform Cloud Documentation](https://www.terraform.io/cloud-docs)
+- [Azure Provider Documentation](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
 - [Ansible Documentation](https://docs.ansible.com/)
 - [k3s Documentation](https://docs.k3s.io/)
 - [Crossplane Documentation](https://docs.crossplane.io/)

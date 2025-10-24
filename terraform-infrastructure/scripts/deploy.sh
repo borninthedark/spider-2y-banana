@@ -28,6 +28,18 @@ if ! command -v az &> /dev/null; then
     exit 1
 fi
 
+# Check Terraform Cloud authentication
+echo -e "${YELLOW}Checking Terraform Cloud authentication...${NC}"
+if [ -z "$TF_TOKEN_app_terraform_io" ] && [ ! -f "$HOME/.terraform.d/credentials.tfrc.json" ]; then
+    echo -e "${RED}Error: Not authenticated to Terraform Cloud${NC}"
+    echo "Please run one of the following:"
+    echo "  1. terraform login"
+    echo "  2. export TF_TOKEN_app_terraform_io=\"your-token\""
+    exit 1
+fi
+echo -e "${GREEN}Terraform Cloud authentication detected${NC}"
+echo ""
+
 # Check if logged in
 if ! az account show &> /dev/null; then
     echo -e "${YELLOW}Not logged in to Azure. Running 'az login'...${NC}"

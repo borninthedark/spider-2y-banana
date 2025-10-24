@@ -19,6 +19,41 @@ This Terraform configuration deploys the foundation infrastructure for running k
 - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Azure subscription
 - SSH key pair
+- [Terraform Cloud](https://app.terraform.io) account (for remote state management)
+
+## Terraform Cloud Setup
+
+This project uses Terraform Cloud for remote state management and collaboration.
+
+### Authentication (Choose One Method)
+
+**Method 1: Interactive Login (Recommended for local development)**
+```bash
+terraform login
+```
+This will open a browser to authenticate and store credentials securely in `~/.terraform.d/credentials.tfrc.json`.
+
+**Method 2: Environment Variable (Recommended for CI/CD)**
+```bash
+export TF_TOKEN_app_terraform_io="your-terraform-cloud-token"
+```
+
+**IMPORTANT: Never commit Terraform Cloud tokens to Git!**
+- Credentials are automatically ignored via `.gitignore`
+- Use GitHub Secrets or environment variables in CI/CD pipelines
+- The `.gitignore` includes:
+  - `.terraform.d/`
+  - `credentials.tfrc.json`
+  - `.terraformrc`
+
+### Workspace Configuration
+
+The configuration is set up for:
+- **Organization**: `DefiantEmissary`
+- **Workspace**: `spider-2y-banana`
+- **Project**: `DeepSpaceNine` (via tags)
+
+Ensure the workspace exists in Terraform Cloud before running `terraform init`.
 
 ## Quick Start
 

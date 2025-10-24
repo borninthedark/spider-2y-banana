@@ -10,6 +10,23 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.5"
     }
+    cloudinit = {
+      source  = "hashicorp/cloudinit"
+      version = "~> 2.3"
+    }
+  }
+
+  # Terraform Cloud backend for remote state management
+  # Authenticate using: terraform login
+  # Or set TF_TOKEN_app_terraform_io environment variable
+  cloud {
+    organization = "DefiantEmissary"
+
+    workspaces {
+      name = "spider-2y-banana"
+      # Project must exist in Terraform Cloud
+      tags = ["DeepSpaceNine", "azure", "k3s"]
+    }
   }
 }
 

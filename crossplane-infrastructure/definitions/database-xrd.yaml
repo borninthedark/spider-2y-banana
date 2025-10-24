@@ -1,0 +1,73 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xpostgresqlinstances.database.lavishk3s.io
+spec:
+  group: database.lavishk3s.io
+  names:
+    kind: XPostgreSQLInstance
+    plural: xpostgresqlinstances
+  claimNames:
+    kind: PostgreSQLInstance
+    plural: postgresqlinstances
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    size:
+                      type: string
+                      description: Size of the database (small, medium, large)
+                      enum:
+                        - small
+                        - medium
+                        - large
+                      default: small
+                    storageGB:
+                      type: integer
+                      description: Storage size in GB
+                      minimum: 5
+                      maximum: 1024
+                      default: 20
+                    version:
+                      type: string
+                      description: PostgreSQL version
+                      enum:
+                        - "11"
+                        - "12"
+                        - "13"
+                        - "14"
+                        - "15"
+                      default: "14"
+                    environment:
+                      type: string
+                      description: Environment (dev, staging, prod)
+                      enum:
+                        - dev
+                        - staging
+                        - prod
+                      default: dev
+                  required:
+                    - size
+                    - environment
+              required:
+                - parameters
+            status:
+              type: object
+              properties:
+                connectionSecret:
+                  type: string
+                  description: Name of the secret containing connection details
+                endpoint:
+                  type: string
+                  description: Database endpoint

@@ -1,0 +1,73 @@
+# Terraform / Bicep
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+outputs.json
+
+# Ansible
+*.retry
+ansible/*.log
+.vault_password
+group_vars/all.yml.backup
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+k3s.yaml
+
+# Hugo
+public/
+resources/
+.hugo_build.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.pem
+*.key
+*_rsa
+secrets/
+*.env
+.env*
+sp-credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Azure
+.azure/
+
+# Deployment notes
+DEPLOYMENT_NOTES.md

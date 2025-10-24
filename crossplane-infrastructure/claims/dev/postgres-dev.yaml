@@ -1,0 +1,18 @@
+---
+apiVersion: database.lavishk3s.io/v1alpha1
+kind: PostgreSQLInstance
+metadata:
+  name: demo-app-db-dev
+  namespace: default
+spec:
+  parameters:
+    size: small
+    storageGB: 20
+    version: "14"
+    environment: dev
+  compositionSelector:
+    matchLabels:
+      provider: azure
+      service: postgresql
+  writeConnectionSecretToRef:
+    name: demo-app-db-connection

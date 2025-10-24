@@ -1,0 +1,91 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resume-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  resume-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "Resume Application Dashboard",
+        "tags": ["resume", "nginx"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "HTTP Requests Rate",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "rate(nginx_http_requests_total{namespace=\"resume\"}[5m])",
+                "legendFormat": "{{ pod }}"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "Active Connections",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "targets": [
+              {
+                "expr": "nginx_connections_active{namespace=\"resume\"}",
+                "legendFormat": "{{ pod }}"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Pod CPU Usage",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "rate(container_cpu_usage_seconds_total{namespace=\"resume\", container=\"resume\"}[5m])",
+                "legendFormat": "{{ pod }}"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Pod Memory Usage",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+            "targets": [
+              {
+                "expr": "container_memory_usage_bytes{namespace=\"resume\", container=\"resume\"}",
+                "legendFormat": "{{ pod }}"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Pod Availability",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
+            "targets": [
+              {
+                "expr": "sum(kube_pod_status_phase{namespace=\"resume\", phase=\"Running\"})",
+                "legendFormat": "Running Pods"
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "title": "HTTP Response Times (p95)",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(nginx_http_request_duration_seconds_bucket{namespace=\"resume\"}[5m]))",
+                "legendFormat": "p95 latency"
+              }
+            ]
+          }
+        ]
+      }
+    }

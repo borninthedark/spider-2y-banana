@@ -1,0 +1,65 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xstorageaccounts.storage.lavishk3s.io
+spec:
+  group: storage.lavishk3s.io
+  names:
+    kind: XStorageAccount
+    plural: xstorageaccounts
+  claimNames:
+    kind: StorageAccount
+    plural: storageaccounts
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    replication:
+                      type: string
+                      description: Replication type
+                      enum:
+                        - LRS
+                        - GRS
+                        - RAGRS
+                        - ZRS
+                      default: LRS
+                    tier:
+                      type: string
+                      description: Storage tier
+                      enum:
+                        - Standard
+                        - Premium
+                      default: Standard
+                    environment:
+                      type: string
+                      description: Environment (dev, staging, prod)
+                      enum:
+                        - dev
+                        - staging
+                        - prod
+                      default: dev
+                  required:
+                    - replication
+                    - environment
+              required:
+                - parameters
+            status:
+              type: object
+              properties:
+                accountName:
+                  type: string
+                  description: Storage account name
+                primaryEndpoint:
+                  type: string
+                  description: Primary blob endpoint

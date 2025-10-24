@@ -1,0 +1,38 @@
+---
+plugin: azure_rm
+auth_source: auto
+include_vm_resource_groups:
+  - rg-spider-2y-banana-dev      # Update this based on your environment
+  - rg-spider-2y-banana-staging
+  - rg-spider-2y-banana-prod
+
+keyed_groups:
+  - key: tags.Role
+    prefix: role
+  - key: tags.Environment
+    prefix: env
+
+conditional_groups:
+  k3s_server: "'k3s-server' in tags.Role"
+  k3s_agent: "'k3s-agent' in tags.Role"
+
+hostvar_expressions:
+  ansible_host: public_ip_address
+
+# Alternative: Static inventory for testing
+# Uncomment and update IPs if not using Azure dynamic inventory
+#
+# all:
+#   children:
+#     k3s_cluster:
+#       children:
+#         k3s_server:
+#           hosts:
+#             k3s-node-0:
+#               ansible_host: YOUR_VM_IP
+#         k3s_agent:
+#           hosts:
+#             k3s-node-1:
+#               ansible_host: YOUR_VM_IP
+#             k3s-node-2:
+#               ansible_host: YOUR_VM_IP

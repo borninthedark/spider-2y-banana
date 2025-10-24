@@ -1,0 +1,15 @@
+---
+apiVersion: storage.lavishk3s.io/v1alpha1
+kind: StorageAccount
+metadata:
+  name: demo-app-storage-dev
+  namespace: default
+spec:
+  parameters:
+    replication: LRS
+    tier: Standard
+    environment: dev
+  compositionSelector:
+    matchLabels:
+      provider: azure
+      service: storage

@@ -1,0 +1,5 @@
+# Jsonnet
+vendor/
+output/
+.jsonnetfile.lock.json
+jsonnetfile.lock.json

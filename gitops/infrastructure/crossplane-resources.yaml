@@ -1,0 +1,65 @@
+---
+# This file links to the Crossplane infrastructure repository
+# ArgoCD will sync XRDs, Compositions, and Claims from here
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crossplane-system
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crossplane-definitions
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/borninthedark/spider-2y-banana.git
+    targetRevision: main
+    path: crossplane-infrastructure/definitions
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crossplane-compositions
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/borninthedark/spider-2y-banana.git
+    targetRevision: main
+    path: crossplane-infrastructure/compositions
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crossplane-claims-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/borninthedark/spider-2y-banana.git
+    targetRevision: main
+    path: crossplane-infrastructure/claims/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: false  # Set to false to prevent accidental deletion of infrastructure
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

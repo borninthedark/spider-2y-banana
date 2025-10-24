@@ -1,0 +1,126 @@
+---
+- name: Add Crossplane Helm repository
+  command: helm repo add crossplane-stable https://charts.crossplane.io/stable
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+
+- name: Update Helm repositories
+  command: helm repo update
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+
+- name: Create Crossplane namespace
+  command: kubectl create namespace {{ crossplane_namespace }}
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: create_ns
+  failed_when:
+    - create_ns.rc != 0
+    - "'AlreadyExists' not in create_ns.stderr"
+  changed_when: create_ns.rc == 0
+
+- name: Install Crossplane
+  command: >
+    helm upgrade --install crossplane crossplane-stable/crossplane
+    --namespace {{ crossplane_namespace }}
+    --version {{ crossplane_version }}
+    --create-namespace
+    --wait
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Wait for Crossplane to be ready
+  command: kubectl wait --for=condition=available --timeout=300s deployment/crossplane -n {{ crossplane_namespace }}
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: crossplane_ready
+  until: crossplane_ready.rc == 0
+  retries: 10
+  delay: 10
+
+- name: Create Azure Provider secret
+  shell: |
+    kubectl create secret generic azure-credentials -n {{ crossplane_namespace }} \
+      --from-literal=credentials='{"clientId":"{{ azure_client_id }}","clientSecret":"{{ azure_client_secret }}","subscriptionId":"{{ azure_subscription_id }}","tenantId":"{{ azure_tenant_id }}"}' \
+      --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  no_log: true
+
+- name: Copy Crossplane Azure Provider manifest
+  copy:
+    dest: /tmp/crossplane-azure-provider.yaml
+    content: |
+      apiVersion: pkg.crossplane.io/v1
+      kind: Provider
+      metadata:
+        name: provider-azure-sql
+      spec:
+        package: xpkg.upbound.io/upbound/provider-azure-sql:v0.42.0
+      ---
+      apiVersion: pkg.crossplane.io/v1
+      kind: Provider
+      metadata:
+        name: provider-azure-storage
+      spec:
+        package: xpkg.upbound.io/upbound/provider-azure-storage:v0.42.0
+      ---
+      apiVersion: pkg.crossplane.io/v1
+      kind: Provider
+      metadata:
+        name: provider-azure-network
+      spec:
+        package: xpkg.upbound.io/upbound/provider-azure-network:v0.42.0
+
+- name: Install Crossplane Azure Providers
+  command: kubectl apply -f /tmp/crossplane-azure-provider.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Wait for providers to be healthy
+  shell: |
+    kubectl wait --for=condition=healthy --timeout=300s \
+      provider/provider-azure-sql \
+      provider/provider-azure-storage \
+      provider/provider-azure-network \
+      -n {{ crossplane_namespace }} || true
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: providers_healthy
+  until: providers_healthy.rc == 0
+  retries: 20
+  delay: 15
+
+- name: Copy ProviderConfig manifest
+  copy:
+    dest: /tmp/provider-config.yaml
+    content: |
+      apiVersion: azure.upbound.io/v1beta1
+      kind: ProviderConfig
+      metadata:
+        name: default
+      spec:
+        credentials:
+          source: Secret
+          secretRef:
+            namespace: {{ crossplane_namespace }}
+            name: azure-credentials
+            key: credentials
+
+- name: Apply ProviderConfig
+  command: kubectl apply -f /tmp/provider-config.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Display Crossplane status
+  command: kubectl get providers
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: crossplane_status
+  changed_when: false
+
+- name: Show Crossplane providers
+  debug:
+    msg: "{{ crossplane_status.stdout_lines }}"

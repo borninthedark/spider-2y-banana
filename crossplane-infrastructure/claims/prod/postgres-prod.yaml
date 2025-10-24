@@ -1,0 +1,18 @@
+---
+apiVersion: database.lavishk3s.io/v1alpha1
+kind: PostgreSQLInstance
+metadata:
+  name: demo-app-db-prod
+  namespace: production
+spec:
+  parameters:
+    size: medium
+    storageGB: 100
+    version: "14"
+    environment: prod
+  compositionSelector:
+    matchLabels:
+      provider: azure
+      service: postgresql
+  writeConnectionSecretToRef:
+    name: demo-app-db-connection

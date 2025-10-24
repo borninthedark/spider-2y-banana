@@ -1,0 +1,92 @@
+---
+- name: Add External Secrets Helm repository
+  command: helm repo add external-secrets https://charts.external-secrets.io
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+
+- name: Update Helm repositories
+  command: helm repo update
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+
+- name: Create External Secrets namespace
+  command: kubectl create namespace {{ external_secrets_namespace }}
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: create_ns
+  failed_when:
+    - create_ns.rc != 0
+    - "'AlreadyExists' not in create_ns.stderr"
+  changed_when: create_ns.rc == 0
+
+- name: Install External Secrets Operator
+  command: >
+    helm upgrade --install external-secrets external-secrets/external-secrets
+    --namespace {{ external_secrets_namespace }}
+    --version {{ external_secrets_version }}
+    --create-namespace
+    --wait
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Wait for External Secrets Operator to be ready
+  command: kubectl wait --for=condition=available --timeout=300s deployment/external-secrets -n {{ external_secrets_namespace }}
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: eso_ready
+  until: eso_ready.rc == 0
+  retries: 10
+  delay: 10
+
+- name: Create Azure credentials secret for External Secrets
+  shell: |
+    kubectl create secret generic azure-secret-store-credentials -n {{ external_secrets_namespace }} \
+      --from-literal=client-id="{{ azure_client_id }}" \
+      --from-literal=client-secret="{{ azure_client_secret }}" \
+      --from-literal=tenant-id="{{ azure_tenant_id }}" \
+      --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  no_log: true
+
+- name: Copy ClusterSecretStore manifest
+  copy:
+    dest: /tmp/cluster-secret-store.yaml
+    content: |
+      apiVersion: external-secrets.io/v1beta1
+      kind: ClusterSecretStore
+      metadata:
+        name: azure-backend
+      spec:
+        provider:
+          azurekv:
+            authType: ServicePrincipal
+            vaultUrl: https://{{ azure_key_vault_name }}.vault.azure.net
+            tenantId: {{ azure_tenant_id }}
+            authSecretRef:
+              clientId:
+                name: azure-secret-store-credentials
+                key: client-id
+                namespace: {{ external_secrets_namespace }}
+              clientSecret:
+                name: azure-secret-store-credentials
+                key: client-secret
+                namespace: {{ external_secrets_namespace }}
+
+- name: Apply ClusterSecretStore
+  command: kubectl apply -f /tmp/cluster-secret-store.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Display External Secrets status
+  command: kubectl get clustersecretstore
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: eso_status
+  changed_when: false
+
+- name: Show External Secrets ClusterSecretStore
+  debug:
+    msg: "{{ eso_status.stdout_lines }}"

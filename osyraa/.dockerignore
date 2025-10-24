@@ -1,0 +1,9 @@
+.git
+.github
+.dockerignore
+Dockerfile
+README.md
+tests
+node_modules
+public
+resources

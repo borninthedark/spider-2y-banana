@@ -1,0 +1,84 @@
+---
+- name: Add ArgoCD Helm repository
+  command: helm repo add argo https://argoproj.github.io/argo-helm
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+
+- name: Update Helm repositories
+  command: helm repo update
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+
+- name: Create ArgoCD namespace
+  command: kubectl create namespace {{ argocd_namespace }}
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: create_ns
+  failed_when:
+    - create_ns.rc != 0
+    - "'AlreadyExists' not in create_ns.stderr"
+  changed_when: create_ns.rc == 0
+
+- name: Create ArgoCD values file
+  copy:
+    dest: /tmp/argocd-values.yaml
+    content: |
+      global:
+        domain: {{ ansible_host }}
+
+      server:
+        extraArgs:
+          - --insecure
+        ingress:
+          enabled: false
+        service:
+          type: LoadBalancer
+
+      configs:
+        params:
+          server.insecure: true
+
+- name: Install ArgoCD
+  command: >
+    helm upgrade --install argocd argo/argo-cd
+    --namespace {{ argocd_namespace }}
+    --version {{ argocd_version }}
+    --values /tmp/argocd-values.yaml
+    --wait
+    --timeout 10m
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Wait for ArgoCD server to be ready
+  command: kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n {{ argocd_namespace }}
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: argocd_ready
+  until: argocd_ready.rc == 0
+  retries: 10
+  delay: 10
+
+- name: Get ArgoCD initial admin password
+  shell: kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: argocd_password
+  changed_when: false
+
+- name: Save ArgoCD password to file
+  copy:
+    content: "{{ argocd_password.stdout }}"
+    dest: "/home/{{ ansible_user }}/argocd-admin-password.txt"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Display ArgoCD information
+  debug:
+    msg:
+      - "ArgoCD installed successfully"
+      - "Access via: http://{{ ansible_host }}:80 or kubectl port-forward"
+      - "Username: admin"
+      - "Password saved to: /home/{{ ansible_user }}/argocd-admin-password.txt"

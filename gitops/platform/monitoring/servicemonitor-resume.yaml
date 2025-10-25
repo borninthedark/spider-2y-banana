@@ -10,10 +10,10 @@ spec:
   selector:
     app: resume
   ports:
-    - name: metrics
-      protocol: TCP
-      port: 9113
-      targetPort: metrics
+  - name: metrics
+    protocol: TCP
+    port: 9113
+    targetPort: metrics
   type: ClusterIP
 ---
 apiVersion: monitoring.coreos.com/v1
@@ -29,6 +29,6 @@ spec:
     matchLabels:
       app: resume
   endpoints:
-    - port: metrics
-      interval: 30s
-      path: /metrics
+  - port: metrics
+    interval: 30s
+    path: /metrics

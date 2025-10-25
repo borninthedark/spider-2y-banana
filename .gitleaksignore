@@ -1,0 +1,7 @@
+# Gitleaks ignore file
+# Allowlist test files that contain fake/sanitized test data
+
+# Test files with mock secret data
+tests/test_check_secrets.py
+tests/test_*.py
+**/test_*.py

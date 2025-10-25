@@ -5,121 +5,153 @@
 
 repos:
   # General hooks
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: trailing-whitespace
-        exclude: '\.md$'
-      - id: end-of-file-fixer
-      - id: check-yaml
-        args: ['--allow-multiple-documents']
-      - id: check-json
-      - id: check-toml
-      - id: check-added-large-files
-        args: ['--maxkb=500']
-      - id: check-merge-conflict
-      - id: detect-private-key
-      - id: detect-aws-credentials
-        args: ['--allow-missing-credentials']
-      - id: check-case-conflict
-      - id: mixed-line-ending
-        args: ['--fix=lf']
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+  - id: trailing-whitespace
+    exclude: \.md$
+  - id: end-of-file-fixer
+  - id: check-yaml
+    args: [--allow-multiple-documents]
+  - id: check-json
+  - id: check-toml
+  - id: check-added-large-files
+    args: [--maxkb=500]
+  - id: check-merge-conflict
+  - id: detect-private-key
+    exclude: (\.gitleaks\.toml$|^tests/)
+  - id: detect-aws-credentials
+    args: [--allow-missing-credentials]
+  - id: check-case-conflict
+  - id: mixed-line-ending
+    args: [--fix=lf]
 
   # Secret detection with Gitleaks
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.1
-    hooks:
-      - id: gitleaks
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.18.1
+  hooks:
+  - id: gitleaks
+    exclude: ^tests/
 
   # Terraform/Bicep
-  - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.86.0
-    hooks:
-      - id: terraform_fmt
-      - id: terraform_validate
-      - id: terraform_tflint
-        args:
-          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
-      - id: terraform_docs
-        args:
-          - --hook-config=--path-to-file=README.md
-          - --hook-config=--add-to-existing-file=true
-          - --hook-config=--create-file-if-not-exist=true
+- repo: https://github.com/antonbabenko/pre-commit-terraform
+  rev: v1.86.0
+  hooks:
+  - id: terraform_fmt
+  - id: terraform_validate
+  - id: terraform_tflint
+    args:
+    - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+  - id: terraform_docs
+    args:
+    - --hook-config=--path-to-file=README.md
+    - --hook-config=--add-to-existing-file=true
+    - --hook-config=--create-file-if-not-exist=true
 
   # Ansible
-  - repo: https://github.com/ansible/ansible-lint
-    rev: v6.22.1
-    hooks:
-      - id: ansible-lint
-        files: \.(yaml|yml)$
-        exclude: '.github/|kubernetes/|k8s/'
+- repo: https://github.com/ansible/ansible-lint
+  rev: v6.22.1
+  hooks:
+  - id: ansible-lint
+    files: \.(yaml|yml)$
+    exclude: .github/|kubernetes/|k8s/
 
   # Dockerfile
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
-    hooks:
-      - id: hadolint-docker
-        args: ['--ignore', 'DL3018', '--ignore', 'DL3008']
+- repo: https://github.com/hadolint/hadolint
+  rev: v2.12.0
+  hooks:
+  - id: hadolint-docker
+    args: [--config, .hadolint.yaml]
 
-  # Go
-  - repo: https://github.com/golangci/golangci-lint
-    rev: v1.55.2
-    hooks:
-      - id: golangci-lint
-        args: ['--timeout=5m']
+  # Go - disabled due to subdirectory module location
+  # Run manually: cd osyraa/tests && golangci-lint run
+  # - repo: https://github.com/golangci/golangci-lint
+  #   rev: v2.5.0
+  #   hooks:
+  #     - id: golangci-lint
+  #       args: ['--timeout=5m']
+  #       files: ^osyraa/tests/.*\.go$
 
   # Shell scripts
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
-    hooks:
-      - id: shellcheck
-        args: ['-e', 'SC1091']
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.9.0.6
+  hooks:
+  - id: shellcheck
+    args: [-e, SC1091]
 
-  # Markdown
-  - repo: https://github.com/markdownlint/markdownlint
-    rev: v0.12.0
-    hooks:
-      - id: markdownlint
-        args: ['--fix']
-        exclude: 'vendor/'
+  # Markdown - disabled due to Ruby gem dependency
+  # Install Ruby and run: gem install mdl
+  # - repo: https://github.com/markdownlint/markdownlint
+  #   rev: v0.12.0
+  #   hooks:
+  #     - id: markdownlint
+  #       args: ['--fix']
+  #       exclude: 'vendor/'
 
   # YAML formatting
-  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.11.0
-    hooks:
-      - id: pretty-format-yaml
-        args: ['--autofix', '--indent', '2']
-        exclude: '.github/|kubernetes/|k8s/|crossplane/'
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.11.0
+  hooks:
+  - id: pretty-format-yaml
+    args: [--autofix, --indent, '2']
+    exclude: .github/|kubernetes/|k8s/|crossplane/
+
+  # Python code formatting and linting
+- repo: https://github.com/psf/black
+  rev: 23.12.1
+  hooks:
+  - id: black
+    language_version: python3.13
+
+- repo: https://github.com/pycqa/flake8
+  rev: 7.0.0
+  hooks:
+  - id: flake8
+    args: [--max-line-length=88, '--extend-ignore=E203,W503']
+
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.8.0
+  hooks:
+  - id: mypy
+    additional_dependencies: [types-requests]
+    args: [--ignore-missing-imports]
 
 # Custom local hooks
-  - repo: local
-    hooks:
-      - id: check-terraform-tfvars
-        name: Prevent committing terraform.tfvars
-        entry: 'terraform.tfvars files should not be committed'
-        language: fail
-        files: 'terraform\.tfvars$'
+- repo: local
+  hooks:
+  - id: golangci-lint-tests
+    name: golangci-lint (Go tests)
+    entry: bash -c 'if command -v golangci-lint >/dev/null 2>&1; then cd osyraa/tests && golangci-lint run --timeout=5m; else echo "golangci-lint not installed, skipping"; fi'
+    language: system
+    files: ^osyraa/tests/.*\.go$
+    pass_filenames: false
 
-      - id: check-sp-credentials
-        name: Prevent committing service principal credentials
-        entry: 'Service principal credentials should not be committed'
-        language: fail
-        files: 'sp-credentials\.json$'
+  - id: check-terraform-tfvars
+    name: Prevent committing terraform.tfvars
+    entry: terraform.tfvars files should not be committed
+    language: fail
+    files: terraform\.tfvars$
 
-      - id: check-env-files
-        name: Prevent committing .env files
-        entry: '.env files should not be committed'
-        language: fail
-        files: '\.env$|\.env\..*$'
+  - id: check-sp-credentials
+    name: Prevent committing service principal credentials
+    entry: Service principal credentials should not be committed
+    language: fail
+    files: sp-credentials\.json$
 
-      - id: check-kubeconfig
-        name: Prevent committing kubeconfig
-        entry: 'kubeconfig files should not be committed'
-        language: fail
-        files: 'kubeconfig|\.kubeconfig$|k3s\.yaml$'
+  - id: check-env-files
+    name: Prevent committing .env files
+    entry: .env files should not be committed
+    language: fail
+    files: \.env$|\.env\..*$
 
-      - id: check-ansible-vault-password
-        name: Prevent committing Ansible vault password
-        entry: 'Ansible vault password should not be committed'
-        language: fail
-        files: '\.vault_password$'
+  - id: check-kubeconfig
+    name: Prevent committing kubeconfig
+    entry: kubeconfig files should not be committed
+    language: fail
+    files: kubeconfig|\.kubeconfig$|k3s\.yaml$
+
+  - id: check-ansible-vault-password
+    name: Prevent committing Ansible vault password
+    entry: Ansible vault password should not be committed
+    language: fail
+    files: \.vault_password$

@@ -1,4 +1,3 @@
----
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -12,79 +11,79 @@ spec:
     kind: XStorageAccount
 
   patchSets:
-    - name: common-parameters
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.environment
-          toFieldPath: metadata.labels[environment]
+  - name: common-parameters
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.environment
+      toFieldPath: metadata.labels[environment]
 
   resources:
-    - name: resourcegroup
-      base:
-        apiVersion: azure.upbound.io/v1beta1
-        kind: ResourceGroup
-        spec:
-          forProvider:
-            location: East US
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.environment
-          toFieldPath: metadata.name
-          transforms:
-            - type: string
-              string:
-                fmt: "rg-storage-%s"
+  - name: resourcegroup
+    base:
+      apiVersion: azure.upbound.io/v1beta1
+      kind: ResourceGroup
+      spec:
+        forProvider:
+          location: East US
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.environment
+      toFieldPath: metadata.name
+      transforms:
+      - type: string
+        string:
+          fmt: rg-storage-%s
 
-    - name: storageaccount
-      base:
-        apiVersion: storage.azure.upbound.io/v1beta1
-        kind: Account
-        spec:
-          forProvider:
-            resourceGroupNameSelector:
-              matchControllerRef: true
-            location: East US
-            accountTier: Standard
-            accountReplicationType: LRS
-            accountKind: StorageV2
-            allowBlobPublicAccess: false
-            minTlsVersion: TLS1_2
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: metadata.name
-          toFieldPath: metadata.name
-          transforms:
-            - type: string
-              string:
-                fmt: "sa%s"
-                type: string
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.tier
-          toFieldPath: spec.forProvider.accountTier
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.replication
-          toFieldPath: spec.forProvider.accountReplicationType
-        - type: ToCompositeFieldPath
-          fromFieldPath: metadata.name
-          toFieldPath: status.accountName
-        - type: ToCompositeFieldPath
-          fromFieldPath: status.atProvider.primaryBlobEndpoint
-          toFieldPath: status.primaryEndpoint
+  - name: storageaccount
+    base:
+      apiVersion: storage.azure.upbound.io/v1beta1
+      kind: Account
+      spec:
+        forProvider:
+          resourceGroupNameSelector:
+            matchControllerRef: true
+          location: East US
+          accountTier: Standard
+          accountReplicationType: LRS
+          accountKind: StorageV2
+          allowBlobPublicAccess: false
+          minTlsVersion: TLS1_2
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: metadata.name
+      toFieldPath: metadata.name
+      transforms:
+      - type: string
+        string:
+          fmt: sa%s
+          type: string
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.tier
+      toFieldPath: spec.forProvider.accountTier
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.replication
+      toFieldPath: spec.forProvider.accountReplicationType
+    - type: ToCompositeFieldPath
+      fromFieldPath: metadata.name
+      toFieldPath: status.accountName
+    - type: ToCompositeFieldPath
+      fromFieldPath: status.atProvider.primaryBlobEndpoint
+      toFieldPath: status.primaryEndpoint
 
-    - name: container
-      base:
-        apiVersion: storage.azure.upbound.io/v1beta1
-        kind: Container
-        spec:
-          forProvider:
-            storageAccountNameSelector:
-              matchControllerRef: true
-            containerAccessType: private
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: metadata.name
-          toFieldPath: metadata.name
-          transforms:
-            - type: string
-              string:
-                fmt: "%s-container"
+  - name: container
+    base:
+      apiVersion: storage.azure.upbound.io/v1beta1
+      kind: Container
+      spec:
+        forProvider:
+          storageAccountNameSelector:
+            matchControllerRef: true
+          containerAccessType: private
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: metadata.name
+      toFieldPath: metadata.name
+      transforms:
+      - type: string
+        string:
+          fmt: '%s-container'

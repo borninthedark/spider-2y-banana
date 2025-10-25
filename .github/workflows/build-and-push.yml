@@ -1,0 +1,131 @@
+name: Build and Push to GHCR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'osyraa/**'
+      - '.github/workflows/build-and-push.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'osyraa/**'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/osyraa
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Podman, Buildah, and Skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman buildah skopeo
+
+      - name: Lint Containerfile with Hadolint
+        run: |
+          wget -qO- https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 > /tmp/hadolint
+          chmod +x /tmp/hadolint
+          /tmp/hadolint --config .hadolint.yaml osyraa/Containerfile
+
+      - name: Generate image tags
+        id: meta
+        run: |
+          TAGS=""
+          REGISTRY="${{ env.REGISTRY }}"
+          IMAGE="${{ env.IMAGE_NAME }}"
+
+          # Generate tags based on event type
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            TAGS="${REGISTRY}/${IMAGE}:pr-${{ github.event.pull_request.number }}"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAGS="${REGISTRY}/${IMAGE}:latest"
+            TAGS="${TAGS},${REGISTRY}/${IMAGE}:main-${GITHUB_SHA::7}"
+          elif [[ "${{ github.ref }}" =~ refs/tags/v.* ]]; then
+            VERSION="${{ github.ref_name }}"
+            TAGS="${REGISTRY}/${IMAGE}:${VERSION}"
+          else
+            BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
+            TAGS="${REGISTRY}/${IMAGE}:${BRANCH_NAME}"
+            TAGS="${TAGS},${REGISTRY}/${IMAGE}:${BRANCH_NAME}-${GITHUB_SHA::7}"
+          fi
+
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Generated tags: ${TAGS}"
+
+      - name: Build image with Buildah
+        id: build
+        run: |
+          buildah bud \
+            --format docker \
+            --layers \
+            --build-arg DOMAIN_NAME=princetonstrong.online \
+            -f ./osyraa/Containerfile \
+            -t osyraa:build \
+            ./osyraa
+
+          # Get image ID
+          IMAGE_ID=$(buildah images --format "{{.ID}}" osyraa:build)
+          echo "image_id=${IMAGE_ID}" >> $GITHUB_OUTPUT
+          echo "Built image: ${IMAGE_ID}"
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: osyraa:build
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Tag image with all tags
+        run: |
+          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.meta.outputs.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+            echo "Tagging as: ${tag}"
+            buildah tag osyraa:build "${tag}"
+          done
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Push image to registry
+        if: github.event_name != 'pull_request'
+        run: |
+          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.meta.outputs.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+            echo "Pushing: ${tag}"
+            podman push "${tag}"
+          done
+
+      - name: Get image digest
+        if: github.event_name != 'pull_request'
+        id: digest
+        run: |
+          # Get the digest of the pushed image
+          PRIMARY_TAG=$(echo "${{ steps.meta.outputs.tags }}" | cut -d',' -f1)
+          DIGEST=$(skopeo inspect docker://${PRIMARY_TAG} | jq -r '.Digest')
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+          echo "Image digest: ${DIGEST}"
+
+      - name: Generate artifact attestation
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.digest.outputs.digest }}
+          push-to-registry: true

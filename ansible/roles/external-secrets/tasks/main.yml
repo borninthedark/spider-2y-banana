@@ -1,4 +1,3 @@
----
 - name: Add External Secrets Helm repository
   command: helm repo add external-secrets https://charts.external-secrets.io
   environment:
@@ -17,8 +16,8 @@
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   register: create_ns
   failed_when:
-    - create_ns.rc != 0
-    - "'AlreadyExists' not in create_ns.stderr"
+  - create_ns.rc != 0
+  - "'AlreadyExists' not in create_ns.stderr"
   changed_when: create_ns.rc == 0
 
 - name: Install External Secrets Operator
@@ -89,4 +88,4 @@
 
 - name: Show External Secrets ClusterSecretStore
   debug:
-    msg: "{{ eso_status.stdout_lines }}"
+    msg: '{{ eso_status.stdout_lines }}'

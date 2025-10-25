@@ -1,110 +1,109 @@
----
 - name: Install k3s server
   when: "'k3s_server' in group_names"
   block:
-    - name: Check if k3s is already installed
-      stat:
-        path: /usr/local/bin/k3s
-      register: k3s_installed
+  - name: Check if k3s is already installed
+    stat:
+      path: /usr/local/bin/k3s
+    register: k3s_installed
 
-    - name: Download k3s installation script
-      get_url:
-        url: https://get.k3s.io
-        dest: /tmp/k3s_install.sh
-        mode: '0755'
-      when: not k3s_installed.stat.exists
+  - name: Download k3s installation script
+    get_url:
+      url: https://get.k3s.io
+      dest: /tmp/k3s_install.sh
+      mode: '0755'
+    when: not k3s_installed.stat.exists
 
-    - name: Install k3s server (first node)
-      shell: |
-        INSTALL_K3S_VERSION="{{ k3s_version }}" \
-        K3S_TOKEN="{{ k3s_token }}" \
-        INSTALL_K3S_EXEC="server --cluster-init --tls-san={{ ansible_host }} --write-kubeconfig-mode=644" \
-        /tmp/k3s_install.sh
-      when:
-        - not k3s_installed.stat.exists
-        - groups['k3s_server'] | length == 1 or inventory_hostname == groups['k3s_server'][0]
+  - name: Install k3s server (first node)
+    shell: |
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      K3S_TOKEN="{{ k3s_token }}" \
+      INSTALL_K3S_EXEC="server --cluster-init --tls-san={{ ansible_host }} --write-kubeconfig-mode=644" \
+      /tmp/k3s_install.sh
+    when:
+    - not k3s_installed.stat.exists
+    - groups['k3s_server'] | length == 1 or inventory_hostname == groups['k3s_server'][0]
 
-    - name: Install k3s server (additional nodes for HA)
-      shell: |
-        INSTALL_K3S_VERSION="{{ k3s_version }}" \
-        K3S_TOKEN="{{ k3s_token }}" \
-        INSTALL_K3S_EXEC="server --server https://{{ k3s_server_ip }}:6443 --tls-san={{ ansible_host }}" \
-        /tmp/k3s_install.sh
-      when:
-        - not k3s_installed.stat.exists
-        - groups['k3s_server'] | length > 1
-        - inventory_hostname != groups['k3s_server'][0]
+  - name: Install k3s server (additional nodes for HA)
+    shell: |
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      K3S_TOKEN="{{ k3s_token }}" \
+      INSTALL_K3S_EXEC="server --server https://{{ k3s_server_ip }}:6443 --tls-san={{ ansible_host }}" \
+      /tmp/k3s_install.sh
+    when:
+    - not k3s_installed.stat.exists
+    - groups['k3s_server'] | length > 1
+    - inventory_hostname != groups['k3s_server'][0]
 
-    - name: Wait for k3s server to be ready
-      wait_for:
-        port: 6443
-        delay: 5
-        timeout: 300
+  - name: Wait for k3s server to be ready
+    wait_for:
+      port: 6443
+      delay: 5
+      timeout: 300
 
-    - name: Create .kube directory for user
-      file:
-        path: "/home/{{ ansible_user }}/.kube"
-        state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-        mode: '0755'
+  - name: Create .kube directory for user
+    file:
+      path: /home/{{ ansible_user }}/.kube
+      state: directory
+      owner: '{{ ansible_user }}'
+      group: '{{ ansible_user }}'
+      mode: '0755'
 
-    - name: Copy kubeconfig to user directory
-      copy:
-        src: /etc/rancher/k3s/k3s.yaml
-        dest: "/home/{{ ansible_user }}/.kube/config"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-        mode: '0600'
-        remote_src: yes
+  - name: Copy kubeconfig to user directory
+    copy:
+      src: /etc/rancher/k3s/k3s.yaml
+      dest: /home/{{ ansible_user }}/.kube/config
+      owner: '{{ ansible_user }}'
+      group: '{{ ansible_user }}'
+      mode: '0600'
+      remote_src: yes
 
-    - name: Update kubeconfig server address
-      replace:
-        path: "/home/{{ ansible_user }}/.kube/config"
-        regexp: 'https://127.0.0.1:6443'
-        replace: 'https://{{ ansible_host }}:6443'
+  - name: Update kubeconfig server address
+    replace:
+      path: /home/{{ ansible_user }}/.kube/config
+      regexp: https://127.0.0.1:6443
+      replace: https://{{ ansible_host }}:6443
 
 - name: Install k3s agent
   when: "'k3s_agent' in group_names"
   block:
-    - name: Check if k3s agent is already installed
-      stat:
-        path: /usr/local/bin/k3s
-      register: k3s_agent_installed
+  - name: Check if k3s agent is already installed
+    stat:
+      path: /usr/local/bin/k3s
+    register: k3s_agent_installed
 
-    - name: Download k3s installation script
-      get_url:
-        url: https://get.k3s.io
-        dest: /tmp/k3s_install.sh
-        mode: '0755'
-      when: not k3s_agent_installed.stat.exists
+  - name: Download k3s installation script
+    get_url:
+      url: https://get.k3s.io
+      dest: /tmp/k3s_install.sh
+      mode: '0755'
+    when: not k3s_agent_installed.stat.exists
 
-    - name: Install k3s agent
-      shell: |
-        INSTALL_K3S_VERSION="{{ k3s_version }}" \
-        K3S_URL="https://{{ k3s_server_ip }}:6443" \
-        K3S_TOKEN="{{ k3s_token }}" \
-        /tmp/k3s_install.sh agent
-      when: not k3s_agent_installed.stat.exists
+  - name: Install k3s agent
+    shell: |
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      K3S_URL="https://{{ k3s_server_ip }}:6443" \
+      K3S_TOKEN="{{ k3s_token }}" \
+      /tmp/k3s_install.sh agent
+    when: not k3s_agent_installed.stat.exists
 
 - name: Install kubectl and helm
   when: "'k3s_server' in group_names"
   block:
-    - name: Download kubectl
-      get_url:
-        url: "https://dl.k8s.io/release/v{{ kubectl_version }}/bin/linux/amd64/kubectl"
-        dest: /usr/local/bin/kubectl
-        mode: '0755'
+  - name: Download kubectl
+    get_url:
+      url: https://dl.k8s.io/release/v{{ kubectl_version }}/bin/linux/amd64/kubectl
+      dest: /usr/local/bin/kubectl
+      mode: '0755'
 
-    - name: Download helm
-      unarchive:
-        src: "https://get.helm.sh/helm-v{{ helm_version }}-linux-amd64.tar.gz"
-        dest: /tmp
-        remote_src: yes
+  - name: Download helm
+    unarchive:
+      src: https://get.helm.sh/helm-v{{ helm_version }}-linux-amd64.tar.gz
+      dest: /tmp
+      remote_src: yes
 
-    - name: Install helm
-      copy:
-        src: /tmp/linux-amd64/helm
-        dest: /usr/local/bin/helm
-        mode: '0755'
-        remote_src: yes
+  - name: Install helm
+    copy:
+      src: /tmp/linux-amd64/helm
+      dest: /usr/local/bin/helm
+      mode: '0755'
+      remote_src: yes

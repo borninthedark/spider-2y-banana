@@ -1,36 +1,35 @@
----
 # General settings
 environment: dev
 k3s_version: v1.28.5+k3s1
-kubectl_version: "1.28.5"
-helm_version: "3.13.3"
+kubectl_version: 1.28.5
+helm_version: 3.13.3
 
 # Azure settings (populated after running create-service-principal.sh)
-azure_subscription_id: "YOUR_SUBSCRIPTION_ID"
-azure_tenant_id: "YOUR_TENANT_ID"
-azure_client_id: "YOUR_CLIENT_ID"
-azure_client_secret: "YOUR_CLIENT_SECRET"  # Consider using Ansible Vault
+azure_subscription_id: YOUR_SUBSCRIPTION_ID
+azure_tenant_id: YOUR_TENANT_ID
+azure_client_id: YOUR_CLIENT_ID
+azure_client_secret: YOUR_CLIENT_SECRET    # Consider using Ansible Vault
 
 # Resource group and Key Vault
-azure_resource_group: "rg-spider-2y-banana-{{ environment }}"
-azure_key_vault_name: "YOUR_KEY_VAULT_NAME"  # From Bicep output
+azure_resource_group: rg-spider-2y-banana-{{ environment }}
+azure_key_vault_name: YOUR_KEY_VAULT_NAME    # From Bicep output
 
 # k3s configuration
 k3s_token: "{{ lookup('password', '/tmp/k3s_token chars=ascii_letters,digits length=32') }}"
 k3s_server_ip: "{{ hostvars[groups['k3s_server'][0]]['ansible_host'] }}"
 
 # Crossplane configuration
-crossplane_version: "1.14.5"
+crossplane_version: 1.14.5
 crossplane_namespace: crossplane-system
 
 # ArgoCD configuration
-argocd_version: "5.55.0"  # Helm chart version
+argocd_version: 5.55.0    # Helm chart version
 argocd_namespace: argocd
 argocd_admin_password: "{{ lookup('password', '/tmp/argocd_password chars=ascii_letters,digits length=16') }}"
 
 # External Secrets Operator configuration
-external_secrets_version: "0.9.11"  # Helm chart version
+external_secrets_version: 0.9.11    # Helm chart version
 external_secrets_namespace: external-secrets-system
 
 # Container Registry
-acr_login_server: "YOUR_ACR_LOGIN_SERVER"  # From Bicep output
+acr_login_server: YOUR_ACR_LOGIN_SERVER    # From Bicep output

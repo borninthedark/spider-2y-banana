@@ -1,4 +1,3 @@
----
 - name: Add ArgoCD Helm repository
   command: helm repo add argo https://argoproj.github.io/argo-helm
   environment:
@@ -17,8 +16,8 @@
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   register: create_ns
   failed_when:
-    - create_ns.rc != 0
-    - "'AlreadyExists' not in create_ns.stderr"
+  - create_ns.rc != 0
+  - "'AlreadyExists' not in create_ns.stderr"
   changed_when: create_ns.rc == 0
 
 - name: Create ArgoCD values file
@@ -69,16 +68,16 @@
 
 - name: Save ArgoCD password to file
   copy:
-    content: "{{ argocd_password.stdout }}"
-    dest: "/home/{{ ansible_user }}/argocd-admin-password.txt"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    content: '{{ argocd_password.stdout }}'
+    dest: /home/{{ ansible_user }}/argocd-admin-password.txt
+    owner: '{{ ansible_user }}'
+    group: '{{ ansible_user }}'
     mode: '0600'
 
 - name: Display ArgoCD information
   debug:
     msg:
-      - "ArgoCD installed successfully"
-      - "Access via: http://{{ ansible_host }}:80 or kubectl port-forward"
-      - "Username: admin"
-      - "Password saved to: /home/{{ ansible_user }}/argocd-admin-password.txt"
+    - ArgoCD installed successfully
+    - 'Access via: http://{{ ansible_host }}:80 or kubectl port-forward'
+    - 'Username: admin'
+    - 'Password saved to: /home/{{ ansible_user }}/argocd-admin-password.txt'

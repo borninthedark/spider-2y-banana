@@ -62,4 +62,4 @@ spec:
       prune: false  # Set to false to prevent accidental deletion of infrastructure
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true

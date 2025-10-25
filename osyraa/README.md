@@ -7,11 +7,11 @@ A static resume website built with Hugo and deployed via GitOps.
 This Hugo-based static site serves as a professional resume for Princeton A. Strong, demonstrating modern web deployment practices with:
 
 - **Hugo**: Fast static site generator
-- **Docker**: Multi-stage build with nginx
+- **Podman/Buildah**: Daemonless multi-stage container builds with nginx
 - **Kubernetes**: Cloud-native deployment
 - **GitOps**: Automated deployment via ArgoCD
 - **Monitoring**: Prometheus metrics with nginx-exporter
-- **CI/CD**: GitHub Actions pipeline
+- **CI/CD**: GitHub Actions pipeline with Trivy security scanning
 
 ## Features
 
@@ -35,13 +35,13 @@ This Hugo-based static site serves as a professional resume for Princeton A. Str
 ## Local Development
 
 ### Prerequisites
-- Docker
+- Podman and Buildah (or Docker as alternative)
 - Hugo (optional, for local preview)
 
 ### Build Hugo Site Locally
 ```bash
-# Using Docker
-docker run --rm -v $(pwd):/src -p 1313:1313 klakegg/hugo:0.111.3-alpine server
+# Using Podman
+podman run --rm -v $(pwd):/src:Z -p 1313:1313 klakegg/hugo:0.111.3-alpine server
 
 # Or with Hugo installed
 hugo server -D
@@ -49,14 +49,26 @@ hugo server -D
 
 Access at: http://localhost:1313
 
-### Build Docker Image
+### Build Container Image
 ```bash
-docker build -t resume:local .
+# Using Buildah (recommended)
+buildah bud \
+  --format docker \
+  --layers \
+  --build-arg DOMAIN_NAME=princetonstrong.online \
+  -t osyraa:local \
+  .
+
+# Or using Podman
+podman build \
+  --build-arg DOMAIN_NAME=princetonstrong.online \
+  -t osyraa:local \
+  .
 ```
 
 ### Run Container Locally
 ```bash
-docker run -p 8080:80 resume:local
+podman run -p 8080:80 osyraa:local
 ```
 
 Access at: http://localhost:8080
@@ -92,24 +104,47 @@ Tests:
 
 ### GitHub Actions Workflow
 
+**Workflow**: `.github/workflows/build-and-push.yml`
+
 Triggers on:
 - Push to `main` branch
-- Changes in `osyraa/` directory
+- Changes in `osyraa/` directory or workflow file
+- Pull requests to `main` branch
 - Manual workflow dispatch
 
 Pipeline steps:
-1. **Build**: Create Docker image with Hugo content
-2. **Scan**: Run Trivy vulnerability scanner
-3. **Push**: Upload to Azure Container Registry
-4. **Update**: Modify GitOps manifest with new image tag
-5. **Sync**: ArgoCD automatically deploys
+1. **Checkout**: Retrieve repository code
+2. **Install Tools**: Install Podman, Buildah, and Skopeo
+3. **Lint Containerfile**: Validate with Hadolint
+4. **Generate Tags**: Create image tags based on event type
+5. **Build with Buildah**: Build OCI-compliant container image
+6. **Scan with Trivy**: Security vulnerability scanning
+7. **Tag Image**: Apply all generated tags
+8. **Login to GHCR**: Authenticate with GitHub Container Registry
+9. **Push with Podman**: Push all image tags to GHCR
+10. **Get Digest**: Retrieve image digest using Skopeo
+11. **Generate Attestation**: Create build provenance (security)
+
+### Image Tags
+
+Automatically generated tags:
+- `latest`: Latest build from main branch
+- `main-<sha>`: Build from main branch with commit SHA
+- `pr-<number>`: Pull request builds
+- Semantic version tags (if tagged releases)
 
 ### Required Secrets
 
-Configure in GitHub repository settings:
-- `ACR_NAME`: Azure Container Registry name
-- `ACR_USERNAME`: ACR admin username
-- `ACR_PASSWORD`: ACR admin password
+No additional secrets required! The workflow uses:
+- `GITHUB_TOKEN`: Automatically provided by GitHub Actions
+- Grants permission to push to GitHub Container Registry (GHCR)
+
+### Registry Information
+
+- **Registry**: GitHub Container Registry (ghcr.io)
+- **Image**: `ghcr.io/borninthedark/spider-2y-banana/osyraa`
+- **Visibility**: Public (can be changed in package settings)
+- **Cost**: Free for public repositories
 
 ## Kubernetes Deployment
 
@@ -223,10 +258,15 @@ Content here...
 
 ```bash
 # Check Hugo build
-docker run --rm -v $(pwd):/src klakegg/hugo:0.111.3-alpine hugo --minify
+podman run --rm -v $(pwd):/src:Z klakegg/hugo:0.111.3-alpine hugo --minify
 
-# Check Dockerfile syntax
-docker build --no-cache -t resume:debug .
+# Check Containerfile syntax with linting
+wget -qO /tmp/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+chmod +x /tmp/hadolint
+/tmp/hadolint Containerfile
+
+# Build without cache for debugging
+buildah bud --no-cache -t osyraa:debug .
 ```
 
 ### Container Won't Start

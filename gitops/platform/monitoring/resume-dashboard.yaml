@@ -1,11 +1,10 @@
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: resume-dashboard
   namespace: monitoring
   labels:
-    grafana_dashboard: "1"
+    grafana_dashboard: '1'
 data:
   resume-dashboard.json: |
     {

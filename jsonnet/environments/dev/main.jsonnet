@@ -6,7 +6,7 @@ local baseDomain = if std.extVar('DOMAIN_NAME') != '' then std.extVar('DOMAIN_NA
 
 local config = {
   namespace: 'resume',
-  image: 'acrk3sdev.azurecr.io/resume:latest',
+  image: 'ghcr.io/borninthedark/spider-2y-banana/osyraa:latest',
   replicas: 2,
   domain: 'resume.' + baseDomain,
 };

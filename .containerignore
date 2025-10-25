@@ -51,6 +51,7 @@ target/
 *.swn
 *~
 *.iml
+.claude/
 
 # OS files
 .DS_Store

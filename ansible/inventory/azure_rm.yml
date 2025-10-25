@@ -1,16 +1,15 @@
----
 plugin: azure_rm
 auth_source: auto
 include_vm_resource_groups:
-  - rg-spider-2y-banana-dev      # Update this based on your environment
-  - rg-spider-2y-banana-staging
-  - rg-spider-2y-banana-prod
+- rg-spider-2y-banana-dev        # Update this based on your environment
+- rg-spider-2y-banana-staging
+- rg-spider-2y-banana-prod
 
 keyed_groups:
-  - key: tags.Role
-    prefix: role
-  - key: tags.Environment
-    prefix: env
+- key: tags.Role
+  prefix: role
+- key: tags.Environment
+  prefix: env
 
 conditional_groups:
   k3s_server: "'k3s-server' in tags.Role"

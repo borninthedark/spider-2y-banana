@@ -13,10 +13,10 @@ from typing import Dict, Optional
 
 
 class Colors:
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    NC = '\033[0m'
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    NC = "\033[0m"
 
 
 def print_colored(message: str, color: str = Colors.NC):
@@ -24,14 +24,13 @@ def print_colored(message: str, color: str = Colors.NC):
     print(f"{color}{message}{Colors.NC}")
 
 
-def run_command(command: list[str], capture_output: bool = True) -> subprocess.CompletedProcess:
+def run_command(
+    command: list[str], capture_output: bool = True
+) -> subprocess.CompletedProcess:
     """Run shell command and return result."""
     try:
         result = subprocess.run(
-            command,
-            capture_output=capture_output,
-            text=True,
-            check=True
+            command, capture_output=capture_output, text=True, check=True
         )
         return result
     except subprocess.CalledProcessError as e:
@@ -42,7 +41,7 @@ def run_command(command: list[str], capture_output: bool = True) -> subprocess.C
 
 def get_subscription_id() -> str:
     """Get current Azure subscription ID."""
-    result = run_command(['az', 'account', 'show', '--query', 'id', '-o', 'tsv'])
+    result = run_command(["az", "account", "show", "--query", "id", "-o", "tsv"])
     return result.stdout.strip()
 
 
@@ -50,20 +49,28 @@ def create_service_principal(sp_name: str, subscription_id: str) -> Dict[str, st
     """Create Azure service principal with Contributor role."""
     print_colored("Creating service principal...", Colors.YELLOW)
 
-    result = run_command([
-        'az', 'ad', 'sp', 'create-for-rbac',
-        '--name', sp_name,
-        '--role', 'Contributor',
-        '--scopes', f'/subscriptions/{subscription_id}'
-    ])
+    result = run_command(
+        [
+            "az",
+            "ad",
+            "sp",
+            "create-for-rbac",
+            "--name",
+            sp_name,
+            "--role",
+            "Contributor",
+            "--scopes",
+            f"/subscriptions/{subscription_id}",
+        ]
+    )
 
     sp_data = json.loads(result.stdout)
 
     credentials = {
-        'CLIENT_ID': sp_data['appId'],
-        'CLIENT_SECRET': sp_data['password'],
-        'TENANT_ID': sp_data['tenant'],
-        'SUBSCRIPTION_ID': subscription_id
+        "CLIENT_ID": sp_data["appId"],
+        "CLIENT_SECRET": sp_data["password"],
+        "TENANT_ID": sp_data["tenant"],
+        "SUBSCRIPTION_ID": subscription_id,
     }
 
     print_colored("✓ Service principal created successfully", Colors.GREEN)
@@ -72,36 +79,47 @@ def create_service_principal(sp_name: str, subscription_id: str) -> Dict[str, st
 
 def get_key_vault_name(terraform_dir: Path) -> Optional[str]:
     """Get Key Vault name from Terraform outputs."""
-    outputs_file = terraform_dir / 'outputs.json'
+    outputs_file = terraform_dir / "outputs.json"
 
     if not outputs_file.exists():
         return None
 
     try:
         outputs = json.loads(outputs_file.read_text())
-        return outputs.get('key_vault_name', {}).get('value')
+        return outputs.get("key_vault_name", {}).get("value")
     except (json.JSONDecodeError, KeyError):
         return None
 
 
 def store_credentials_in_keyvault(key_vault_name: str, credentials: Dict[str, str]):
     """Store service principal credentials in Azure Key Vault."""
-    print_colored(f"\nStoring credentials in Key Vault: {key_vault_name}", Colors.YELLOW)
+    print_colored(
+        f"\nStoring credentials in Key Vault: {key_vault_name}", Colors.YELLOW
+    )
 
     secret_mapping = {
-        'crossplane-client-id': credentials['CLIENT_ID'],
-        'crossplane-client-secret': credentials['CLIENT_SECRET'],
-        'crossplane-tenant-id': credentials['TENANT_ID'],
-        'crossplane-subscription-id': credentials['SUBSCRIPTION_ID']
+        "crossplane-client-id": credentials["CLIENT_ID"],
+        "crossplane-client-secret": credentials["CLIENT_SECRET"],
+        "crossplane-tenant-id": credentials["TENANT_ID"],
+        "crossplane-subscription-id": credentials["SUBSCRIPTION_ID"],
     }
 
     for secret_name, secret_value in secret_mapping.items():
-        run_command([
-            'az', 'keyvault', 'secret', 'set',
-            '--vault-name', key_vault_name,
-            '--name', secret_name,
-            '--value', secret_value
-        ], capture_output=True)
+        run_command(
+            [
+                "az",
+                "keyvault",
+                "secret",
+                "set",
+                "--vault-name",
+                key_vault_name,
+                "--name",
+                secret_name,
+                "--value",
+                secret_value,
+            ],
+            capture_output=True,
+        )
 
     print_colored("✓ Credentials stored in Key Vault", Colors.GREEN)
 
@@ -136,15 +154,21 @@ def display_next_steps():
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Create Azure Service Principal for Crossplane')
-    parser.add_argument('environment', nargs='?', default='dev', help='Environment name (default: dev)')
-    parser.add_argument('--no-keyvault', action='store_true', help='Skip storing in Key Vault')
-    parser.add_argument('--output-file', type=Path, help='Save credentials to file')
+    parser = argparse.ArgumentParser(
+        description="Create Azure Service Principal for Crossplane"
+    )
+    parser.add_argument(
+        "environment", nargs="?", default="dev", help="Environment name (default: dev)"
+    )
+    parser.add_argument(
+        "--no-keyvault", action="store_true", help="Skip storing in Key Vault"
+    )
+    parser.add_argument("--output-file", type=Path, help="Save credentials to file")
     args = parser.parse_args()
 
     sp_name = f"sp-crossplane-{args.environment}"
 
-    print_colored(f"Creating Service Principal for Crossplane", Colors.GREEN)
+    print_colored("Creating Service Principal for Crossplane", Colors.GREEN)
     print(f"Name: {sp_name}\n")
 
     # Get subscription ID
@@ -175,12 +199,12 @@ def main():
         save_credentials_to_file(credentials, args.output_file)
     else:
         # Save to default location
-        default_file = script_dir / 'sp-credentials.json'
+        default_file = script_dir / "sp-credentials.json"
         save_credentials_to_file(credentials, default_file)
 
     # Display next steps
     display_next_steps()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

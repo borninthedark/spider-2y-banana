@@ -49,6 +49,7 @@ resources/
 .fleet/
 .vs/
 *.iml
+.claude/
 
 # OS
 .DS_Store

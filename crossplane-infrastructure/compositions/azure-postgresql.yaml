@@ -1,4 +1,3 @@
----
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -13,126 +12,126 @@ spec:
     kind: XPostgreSQLInstance
 
   patchSets:
-    - name: common-parameters
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.environment
-          toFieldPath: metadata.labels[environment]
+  - name: common-parameters
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.environment
+      toFieldPath: metadata.labels[environment]
 
   resources:
-    - name: resourcegroup
-      base:
-        apiVersion: azure.upbound.io/v1beta1
-        kind: ResourceGroup
-        spec:
-          forProvider:
-            location: East US
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.environment
-          toFieldPath: metadata.name
-          transforms:
-            - type: string
-              string:
-                fmt: "rg-postgres-%s"
+  - name: resourcegroup
+    base:
+      apiVersion: azure.upbound.io/v1beta1
+      kind: ResourceGroup
+      spec:
+        forProvider:
+          location: East US
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.environment
+      toFieldPath: metadata.name
+      transforms:
+      - type: string
+        string:
+          fmt: rg-postgres-%s
 
-    - name: server
-      base:
-        apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
-        kind: Server
-        spec:
-          forProvider:
-            administratorLogin: psqladmin
-            administratorLoginPasswordSecretRef:
-              name: postgres-admin-password
-              namespace: crossplane-system
-              key: password
-            resourceGroupNameSelector:
-              matchControllerRef: true
-            location: East US
-            skuName: B_Gen5_1
-            storageMb: 20480
-            version: "11"
-            sslEnforcementEnabled: true
-            sslMinimalTlsVersionEnforced: TLS1_2
-          writeConnectionSecretToRef:
+  - name: server
+    base:
+      apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
+      kind: Server
+      spec:
+        forProvider:
+          administratorLogin: psqladmin
+          administratorLoginPasswordSecretRef:
+            name: postgres-admin-password
             namespace: crossplane-system
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: metadata.name
-          toFieldPath: metadata.name
-          transforms:
-            - type: string
-              string:
-                fmt: "psql-%s"
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.version
-          toFieldPath: spec.forProvider.version
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.storageGB
-          toFieldPath: spec.forProvider.storageMb
-          transforms:
-            - type: math
-              math:
-                multiply: 1024
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.size
-          toFieldPath: spec.forProvider.skuName
-          transforms:
-            - type: map
-              map:
-                small: B_Gen5_1
-                medium: GP_Gen5_2
-                large: GP_Gen5_4
-        - type: FromCompositeFieldPath
-          fromFieldPath: metadata.name
-          toFieldPath: spec.writeConnectionSecretToRef.name
-          transforms:
-            - type: string
-              string:
-                fmt: "%s-postgresql-conn"
-        - type: ToCompositeFieldPath
-          fromFieldPath: status.atProvider.fqdn
-          toFieldPath: status.endpoint
+            key: password
+          resourceGroupNameSelector:
+            matchControllerRef: true
+          location: East US
+          skuName: B_Gen5_1
+          storageMb: 20480
+          version: '11'
+          sslEnforcementEnabled: true
+          sslMinimalTlsVersionEnforced: TLS1_2
+        writeConnectionSecretToRef:
+          namespace: crossplane-system
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: metadata.name
+      toFieldPath: metadata.name
+      transforms:
+      - type: string
+        string:
+          fmt: psql-%s
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.version
+      toFieldPath: spec.forProvider.version
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.storageGB
+      toFieldPath: spec.forProvider.storageMb
+      transforms:
+      - type: math
+        math:
+          multiply: 1024
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.parameters.size
+      toFieldPath: spec.forProvider.skuName
+      transforms:
+      - type: map
+        map:
+          small: B_Gen5_1
+          medium: GP_Gen5_2
+          large: GP_Gen5_4
+    - type: FromCompositeFieldPath
+      fromFieldPath: metadata.name
+      toFieldPath: spec.writeConnectionSecretToRef.name
+      transforms:
+      - type: string
+        string:
+          fmt: '%s-postgresql-conn'
+    - type: ToCompositeFieldPath
+      fromFieldPath: status.atProvider.fqdn
+      toFieldPath: status.endpoint
 
-    - name: database
-      base:
-        apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
-        kind: Database
-        spec:
-          forProvider:
-            charset: UTF8
-            collation: English_United States.1252
-            serverNameSelector:
-              matchControllerRef: true
-            resourceGroupNameSelector:
-              matchControllerRef: true
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: metadata.name
-          toFieldPath: metadata.name
-          transforms:
-            - type: string
-              string:
-                fmt: "%s-db"
+  - name: database
+    base:
+      apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
+      kind: Database
+      spec:
+        forProvider:
+          charset: UTF8
+          collation: English_United States.1252
+          serverNameSelector:
+            matchControllerRef: true
+          resourceGroupNameSelector:
+            matchControllerRef: true
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: metadata.name
+      toFieldPath: metadata.name
+      transforms:
+      - type: string
+        string:
+          fmt: '%s-db'
 
-    - name: firewall-rule
-      base:
-        apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
-        kind: FirewallRule
-        spec:
-          forProvider:
-            startIpAddress: "0.0.0.0"
-            endIpAddress: "255.255.255.255"
-            serverNameSelector:
-              matchControllerRef: true
-            resourceGroupNameSelector:
-              matchControllerRef: true
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: metadata.name
-          toFieldPath: metadata.name
-          transforms:
-            - type: string
-              string:
-                fmt: "%s-fw-rule"
+  - name: firewall-rule
+    base:
+      apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
+      kind: FirewallRule
+      spec:
+        forProvider:
+          startIpAddress: 0.0.0.0
+          endIpAddress: 255.255.255.255
+          serverNameSelector:
+            matchControllerRef: true
+          resourceGroupNameSelector:
+            matchControllerRef: true
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: metadata.name
+      toFieldPath: metadata.name
+      transforms:
+      - type: string
+        string:
+          fmt: '%s-fw-rule'

@@ -1,0 +1,51 @@
+FROM python:3.13-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    unzip \
+    xz-utils \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Terraform
+RUN curl -fsSL https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip -o terraform.zip && \
+    unzip terraform.zip && \
+    mv terraform /usr/local/bin/ && \
+    rm terraform.zip
+
+# Install TFLint
+RUN curl -fsSL https://github.com/terraform-linters/tflint/releases/download/v0.53.0/tflint_linux_amd64.zip -o tflint.zip && \
+    unzip tflint.zip && \
+    mv tflint /usr/local/bin/ && \
+    rm tflint.zip
+
+# Install hadolint
+RUN wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 && \
+    chmod +x /usr/local/bin/hadolint
+
+# Install shellcheck
+RUN wget -qO- "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.x86_64.tar.xz" | tar -xJv && \
+    mv shellcheck-v0.9.0/shellcheck /usr/local/bin/ && \
+    rm -rf shellcheck-v0.9.0
+
+# Install gitleaks
+RUN wget -O gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.18.1/gitleaks_8.18.1_linux_x64.tar.gz && \
+    tar -xzf gitleaks.tar.gz && \
+    mv gitleaks /usr/local/bin/ && \
+    rm gitleaks.tar.gz
+
+# Install Python tools with pinned versions
+COPY requirements-precommit.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements-precommit.txt
+
+WORKDIR /workspace
+
+# Pre-cache pre-commit environments (optional, speeds up first run)
+# COPY .pre-commit-config.yaml /tmp/
+# RUN cd /tmp && git init && pre-commit install-hooks || true
+
+ENTRYPOINT ["pre-commit"]
+CMD ["run", "--all-files"]

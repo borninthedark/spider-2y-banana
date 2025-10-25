@@ -2,6 +2,8 @@
 
 ## Build and Deploy
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build and Push to GHCR](https://github.com/borninthedark/spider-2y-banana/actions/workflows/build-and-push.yml/badge.svg)](https://github.com/borninthedark/spider-2y-banana/actions/workflows/build-and-push.yml)
+[![Terraform Infrastructure](https://github.com/borninthedark/spider-2y-banana/actions/workflows/terraform.yml/badge.svg)](https://github.com/borninthedark/spider-2y-banana/actions/workflows/terraform.yml)
 [![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoft-azure)](https://azure.microsoft.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-k3s-326CE5?logo=kubernetes)](https://k3s.io/)
 [![GitOps](https://img.shields.io/badge/GitOps-ArgoCD-EF7B4D?logo=argo)](https://argo-cd.readthedocs.io/)
@@ -12,7 +14,7 @@ A comprehensive GitOps demonstration platform showcasing modern cloud-native inf
 
 This project demonstrates a complete GitOps workflow for managing cloud infrastructure and applications on Azure using:
 
-- **Terraform**: Azure infrastructure provisioning (VMs, networking, Key Vault, ACR) with Terraform Cloud remote state
+- **Terraform**: Azure infrastructure provisioning (VMs, networking, Key Vault) with Terraform Cloud remote state
 - **Ansible**: Automated k3s cluster bootstrapping and platform configuration
 - **Crossplane**: Kubernetes-native Azure resource management
 - **ArgoCD**: GitOps-based application and infrastructure delivery
@@ -41,20 +43,26 @@ This project demonstrates a complete GitOps workflow for managing cloud infrastr
            ▼                   ▼                    ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      Azure Cloud                            │
-│  VMs │ SQL │ Storage │ Key Vault │ ACR │ Networks          │
+│  VMs │ SQL │ Storage │ Key Vault │ Networks                 │
+└─────────────────────────────────────────────────────────────┘
+           ▲
+           │
+┌──────────┴──────────────────────────────────────────────────┐
+│             GitHub Container Registry (GHCR)                 │
+│  Docker Images │ Build Attestations │ Provenance           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## 💰 Cost Estimate
 
-### Single VM Dev Setup (~$87/month)
+### Single VM Dev Setup (~$82/month)
 - 1x Standard_B2ms VM: $65
 - 128GB Standard SSD: $6
 - Static Public IP: $3
 - Key Vault: $1
-- ACR Basic: $5
 - Azure SQL Basic: $5
 - Storage Account: $2
+- GitHub Container Registry: Free
 
 ### HA Production Setup (~$337/month)
 - 3x Standard_B2ms VMs: $195
@@ -102,7 +110,6 @@ This will create:
 - Virtual network and subnets
 - Network security groups
 - Azure Key Vault
-- Azure Container Registry
 
 ### 3. Create Service Principal for Crossplane
 
@@ -195,8 +202,10 @@ grafana.princetonstrong.online  -> <VM_PUBLIC_IP>
 ```bash
 cd osyraa
 
-# Build Docker image locally (optional)
-docker build -t resume:local .
+# Build container image locally (optional)
+podman build -t osyraa:local .
+# or with buildah
+buildah bud -t osyraa:local .
 
 # Or push to trigger GitHub Actions CI/CD
 git add .
@@ -205,10 +214,11 @@ git push
 ```
 
 GitHub Actions will:
-1. Build the Docker image
-2. Push to Azure Container Registry
-3. Update GitOps manifests
-4. ArgoCD will automatically sync and deploy
+1. Build the container image with Buildah
+2. Scan with Trivy for vulnerabilities
+3. Push to GitHub Container Registry (GHCR) with Podman
+4. Generate build attestation
+5. ArgoCD will automatically sync and deploy
 
 ## 📂 Repository Structure
 
@@ -218,8 +228,7 @@ spider-2y-banana/
 │   ├── modules/                # Reusable Terraform modules
 │   │   ├── network/
 │   │   ├── vm/
-│   │   ├── keyvault/
-│   │   └── acr/
+│   │   └── keyvault/
 │   ├── main.tf                 # Main orchestration
 │   ├── variables.tf            # Input variables
 │   ├── outputs.tf              # Output values
@@ -270,7 +279,7 @@ spider-2y-banana/
 └── osyraa/                 # Hugo resume application
     ├── content/
     ├── layouts/
-    ├── Dockerfile
+    ├── Containerfile
     ├── tests/
     └── .github/workflows/
 ```
@@ -279,9 +288,15 @@ spider-2y-banana/
 
 ### Terraform Infrastructure
 - **Purpose**: Bootstrap Azure foundation with remote state management
-- **Manages**: VMs, networking, Key Vault, ACR, service principals
+- **Manages**: VMs, networking, Key Vault, service principals
 - **Pattern**: Modular architecture with Terraform Cloud backend
 - **State**: Remote state managed via Terraform Cloud (DefiantEmissary org)
+
+### Container Registry
+- **GHCR**: GitHub Container Registry for OCI container images
+- **Tools**: Podman, Buildah, and Skopeo for building and pushing
+- **Access**: Automatic via GitHub Actions GITHUB_TOKEN
+- **Images**: Resume app and other containerized workloads
 
 ### Ansible Automation
 - **Purpose**: Configure and bootstrap Kubernetes
@@ -316,10 +331,10 @@ cd osyraa/tests
 ./test_build.sh
 ```
 
-### Test Docker Container
+### Test Container Build
 ```bash
 cd osyraa/tests
-./test_docker.sh
+python3 test_docker.py  # Tests Podman build and container
 ```
 
 ### Test Crossplane Resources
@@ -437,6 +452,10 @@ kubectl get certificate -n resume
 
 ### Project Documentation
 
+- **[CI/CD Pipeline Guide](CI_CD_GUIDE.md)** - Comprehensive GitHub Actions workflow documentation
+- **[Workflow Integration Checklist](WORKFLOW_INTEGRATION_CHECKLIST.md)** - Integration verification and status
+- **[Pre-commit Setup Guide](PRECOMMIT_SETUP.md)** - Pre-commit hooks configuration and containerized solution
+- **[Python Scripts Guide](PYTHON_SCRIPTS_GUIDE.md)** - All Python utility scripts reference
 - **[GitHub Secrets Setup](.github/SECRETS.md)** - Required secrets for GitHub Actions workflows
 - **[Security Hardening Guide](docs/security-hardening.md)** - Comprehensive security hardening recommendations
 - **[Deployment Guide](DEPLOYMENT.md)** - Complete step-by-step deployment instructions

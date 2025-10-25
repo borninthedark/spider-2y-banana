@@ -1,4 +1,3 @@
----
 apiVersion: database.lavishk3s.io/v1alpha1
 kind: PostgreSQLInstance
 metadata:
@@ -8,7 +7,7 @@ spec:
   parameters:
     size: small
     storageGB: 20
-    version: "14"
+    version: '14'
     environment: dev
   compositionSelector:
     matchLabels:

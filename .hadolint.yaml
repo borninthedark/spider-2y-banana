@@ -1,0 +1,43 @@
+# Hadolint configuration for Containerfile linting
+# https://github.com/hadolint/hadolint
+
+# Ignore specific rules
+ignored:
+  # DL3008: Pin versions in apt-get install
+  # Reason: Base image package versions are managed by the base image maintainers
+- DL3008
+
+  # DL3015: Avoid additional packages by specifying --no-install-recommends
+  # Reason: Base images and build tools don't always need this optimization
+- DL3015
+
+  # DL3018: Pin versions in apk add
+  # Reason: Alpine package versions are managed by the base image maintainers
+- DL3018
+
+  # DL3047: Avoid use of wget without progress bar
+  # Reason: CI/CD environments don't benefit from progress bars
+- DL3047
+
+  # DL4001: Either use Wget or Curl but not both
+  # Reason: Different tools for different purposes (curl for APIs, wget for downloads)
+- DL4001
+
+  # DL4006: Set the SHELL option -o pipefail before RUN with a pipe
+  # Reason: Using standard shell behavior for compatibility
+- DL4006
+
+  # DL3049: Label schema validation
+  # Reason: Labels are optional metadata and not critical for functionality
+- DL3049
+
+# Trusted registries for base images
+trustedRegistries:
+- docker.io
+- ghcr.io
+- registry.k8s.io
+
+# Label schema requirements (optional)
+label-schema:
+  author: text
+  version: text

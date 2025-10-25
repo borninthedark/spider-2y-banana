@@ -5,3 +5,6 @@
 tests/test_check_secrets.py
 tests/test_*.py
 **/test_*.py
+
+# Documentation with example credentials
+docs/SECRETS_MANAGEMENT.md

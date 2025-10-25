@@ -452,18 +452,33 @@ kubectl get certificate -n resume
 
 ### Project Documentation
 
-- **[CI/CD Pipeline Guide](CI_CD_GUIDE.md)** - Comprehensive GitHub Actions workflow documentation
-- **[Workflow Integration Checklist](WORKFLOW_INTEGRATION_CHECKLIST.md)** - Integration verification and status
-- **[Pre-commit Setup Guide](PRECOMMIT_SETUP.md)** - Pre-commit hooks configuration and containerized solution
-- **[Python Scripts Guide](PYTHON_SCRIPTS_GUIDE.md)** - All Python utility scripts reference
-- **[GitHub Secrets Setup](.github/SECRETS.md)** - Required secrets for GitHub Actions workflows
-- **[Security Hardening Guide](docs/security-hardening.md)** - Comprehensive security hardening recommendations
-- **[Deployment Guide](DEPLOYMENT.md)** - Complete step-by-step deployment instructions
-- **[Quick Start Guide](QUICKSTART.md)** - Fast-track setup for getting started quickly
-- **[Project Summary](PROJECT_SUMMARY.md)** - Detailed project overview and architecture
-- **[Jsonnet Integration](JSONNET_INTEGRATION.md)** - Advanced configuration templating with Jsonnet
+#### Getting Started
+- **[Quick Start Guide](docs/QUICKSTART.md)** - Get the Spider-2y-Banana platform up and running in under 45 minutes.
+- **[Spider-2y-Banana Project Summary](docs/PROJECT_SUMMARY.md)** - - **Total Files Created**: 45+
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Complete step-by-step guide for deploying the Spider-2y-Banana platform.
+
+#### CI/CD & Development
+- **[CI/CD Pipeline Guide](docs/CI_CD_GUIDE.md)** - This project uses GitHub Actions for continuous integration and delivery with two primary workflows:
+- **[Workflow Integration Checklist](docs/WORKFLOW_INTEGRATION_CHECKLIST.md)** - - [x] Workflow file created: `.github/workflows/build-and-push.yml`
+- **[Build Workflow Integration Summary](docs/INTEGRATION_SUMMARY.md)** - **Date**: 2025-10-24
+- **[Pre-commit Setup Guide](docs/PRECOMMIT_SETUP.md)** - The pre-commit hooks were failing with:
+- **[Python Scripts Quick Reference](docs/PYTHON_SCRIPTS_GUIDE.md)** - This guide provides quick reference for all Python scripts in the project.
+
+#### Security & Operations
+- **[Security Hardening Guide](docs/security-hardening.md)** - This guide provides comprehensive security hardening recommendations for the Spider-2y-Banana Git...
+- **[Secrets Management Guide](docs/SECRETS_MANAGEMENT.md)** - This document provides a comprehensive guide for managing secrets across the spider-2y-banana inf...
+- **[Project Audit Summary](docs/AUDIT_SUMMARY.md)** - **Date**: October 24, 2025
+
+#### Advanced Configuration
+- **[Jsonnet Integration Guide](docs/JSONNET_INTEGRATION.md)** - Spider-2y-Banana now includes **Kubernetes libsonnet** (jsonnet) for programmatic Kubernetes mani...
+- **[Domain Configuration Guide](docs/DOMAIN_CONFIGURATION.md)** - This guide explains how to configure your custom domain for the spider-2y-banana project.
+- **[Namecheap DNS Setup with Azure DNS](docs/NAMECHEAP_DNS_SETUP.md)** - This guide walks you through setting up your Namecheap domain to work with Azure DNS, allowing Te...
+
+#### Application Documentation
 - **[Resume App Documentation](osyraa/README.md)** - Hugo-based resume application details
 - **[Test Suite Documentation](osyraa/tests/README.md)** - Testing framework and guidelines
+- **[Terraform Infrastructure](terraform-infrastructure/README.md)** - Infrastructure as code documentation
+- **[Jsonnet Library](jsonnet/README.md)** - Jsonnet configuration library
 
 ### External Resources
 
